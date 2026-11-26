@@ -12,7 +12,11 @@ export function parseTrack(xml: string): Track {
   const doc = new DOMParser().parseFromString(xml, 'application/xml')
   if (doc.documentElement.localName !== 'gpx' || doc.getElementsByTagName('parsererror').length)
     throw new Error('Choose a valid GPX file.')
-  const children = (el: Element, name: string) => Array.from(el.children).filter(n => n.localName === name)
+  function* children(el: Element, name: string): Generator<Element> {
+    for (let child = el.firstElementChild; child; child = child.nextElementSibling) {
+      if (child.localName === name) yield child
+    }
+  }
   const track: Track = []
   for (const trk of children(doc.documentElement,'trk')) {
     for (const seg of children(trk,'trkseg')) {
@@ -25,7 +29,7 @@ export function parseTrack(xml: string): Track {
           run = []
           continue
         }
-        const elevation = number(children(el,'ele')[0]?.textContent)
+        const elevation = number(children(el,'ele').next().value?.textContent)
         run.push({lat, lon, ele: Number.isFinite(elevation) ? elevation : null})
       }
       if (run.length) track.push(run)
