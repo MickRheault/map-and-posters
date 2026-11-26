@@ -372,3 +372,31 @@ test('Step 2 splits an out-and-back, inserts a named rest day, and hides recordi
     expect(svgText).toContain('Day 3 · Pai')
   } finally { app.dom.window.close() }
 })
+
+test('Step 3 curates places, records an overnight visit, exports GPX, and hides photo controls', async()=>{
+  const app=await open()
+  try {
+    const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.01,310],[18,98,300]])
+    const waypoints=new File(['<gpx><wpt lat="18" lon="98.01"><name>Farm homestay</name></wpt></gpx>'],'places.gpx',{type:route.type})
+    await app.upload('#file',[route,waypoints])
+    app.button('Next: Split days')
+    app.button('Next: Places')
+    expect(app.doc.querySelector('[data-step="3"]')?.getAttribute('aria-current')).toBe('step')
+    expect(app.doc.querySelector('#assets')?.textContent).toContain('Places & visits')
+    expect(app.doc.querySelector('#assets')?.textContent).not.toContain('Add photos to')
+
+    const farm=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='Farm homestay')!
+    farm.open=true
+    farm.dispatchEvent(new app.dom.window.Event('toggle'))
+    farm.querySelector<HTMLInputElement>('input[type=checkbox]')!.click()
+    const farmAgain=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='Farm homestay')!
+    farmAgain.open=true
+    farmAgain.dispatchEvent(new app.dom.window.Event('toggle'))
+    ;(app.field('Overnight stay',farmAgain) as HTMLInputElement).click()
+    Array.from(farmAgain.querySelectorAll('button')).find(b=>b.textContent==='Add visit')!.click()
+
+    expect(app.doc.querySelector('#output svg')?.textContent).toContain('Farm homestay')
+    app.button('Download GPX with selected places')
+    expect(await app.downloads.get('trip-with-places.gpx')?.text()).toContain('Farm homestay')
+  } finally { app.dom.window.close() }
+})
