@@ -141,6 +141,7 @@ function gpx(name:string,coords:[number,number,number?][]) {
 test('multi-file trip excludes a duplicate, reorders recordings and groups two days without adding a gap', async()=>{
   const app=await open()
   try {
+    app.button('Full editor')
     const a=gpx('west.gpx',[[0,0],[0,0.01],[0,0.02]])
     const b=gpx('east.gpx',[[0,5],[0,5.01],[0,5.02]])
     const duplicate=new File([a],'copy.gpx',{type:a.type})
@@ -169,6 +170,7 @@ test('split an out-and-back, include a rest day with a photo, reload, restore, a
   const app=await open(),windows=[app.dom.window]
   const tmp=await mkdtemp(join(tmpdir(),'trip-editor-'))
   try {
+    app.button('Full editor')
     const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.01,310],[18,98,300],[18,98.03,320],[18,98.05,340]])
     const waypoints=new File(['<gpx><wpt lat="18" lon="98.01"><name>Farm homestay</name></wpt><wpt lat="18.04" lon="98.04"><name>Off-route meadow</name></wpt></gpx>'],'places.gpx',{type:route.type})
     await app.upload('#file',[route,waypoints])
@@ -207,9 +209,11 @@ test('split an out-and-back, include a rest day with a photo, reload, restore, a
     expect(backed.places.map((p:{visible:boolean})=>p.visible)).toEqual([true,false])
     await until(()=>app.doc.querySelector('#storage-status')?.textContent==='Saved on this device','Autosave failed')
     const reloaded=await open(app.store);windows.push(reloaded.dom.window)
+    reloaded.button('Full editor')
     reloaded.button('Download backup')
     expect(await reloaded.downloads.get('map-and-posters-backup.json')!.text()).toEqual(await backupBlob.text())
     const fresh=await open();windows.push(fresh.dom.window)
+    fresh.button('Full editor')
     await fresh.upload('#restore',[new File([backupBlob],'trip.json',{type:'application/json'})])
     expect(fresh.doc.querySelector('#message')?.textContent).toContain('Restored')
     expect(fresh.doc.querySelector('#output svg')?.outerHTML).toBe(reloaded.doc.querySelector('#output svg')?.outerHTML)
@@ -288,3 +292,58 @@ async function checkDownloads(app:ReturnType<typeof editor>,dir:string) {
   const zip=Array.from(app.downloads).find(([name])=>name.endsWith('.zip'))![1]
   await verifyZip(zip,dir,expectedNames,app.downloads)
 }
+
+test('guided wizard defaults to Step 1, supports GPX import/reorder/overlap exclusion, step focus, and mode switching', async()=>{
+  const app=await open()
+  try {
+    const wizardBtn=app.doc.querySelector<HTMLButtonElement>('[data-mode="wizard"]')!
+    const fullBtn=app.doc.querySelector<HTMLButtonElement>('[data-mode="full"]')!
+    expect(wizardBtn.getAttribute('aria-pressed')).toBe('true')
+    expect(fullBtn.getAttribute('aria-pressed')).toBe('false')
+    expect(app.doc.querySelector('[data-step="1"]')?.getAttribute('aria-current')).toBe('step')
+    expect(app.doc.querySelector('#wizard-heading')?.textContent).toContain('Import GPX')
+    expect(app.doc.querySelector<HTMLElement>('.tabs')?.hidden).toBe(true)
+
+    const a=gpx('west.gpx',[[0,0],[0,0.01],[0,0.02]])
+    const b=gpx('east.gpx',[[0,5],[0,5.01],[0,5.02]])
+    const duplicate=new File([a],'copy.gpx',{type:a.type})
+    await app.upload('#file',[a,b,duplicate])
+    expect(app.doc.querySelector('#message')?.textContent).toContain('Imported 3 GPX files')
+
+    const rows=()=>Array.from(app.doc.querySelectorAll<HTMLElement>('.recording-row'))
+    expect(rows()[2].textContent).toContain('Possible overlap')
+    rows()[2].querySelector('input')!.click()
+    rows()[1].querySelector('button')!.click()
+    expect(rows()[0].textContent).toContain('east.gpx')
+    expect(app.doc.querySelector('#output svg')?.textContent).toContain('4.4 km')
+    expect(app.doc.querySelector('#download-poster')).toBeNull()
+    expect(app.doc.querySelector('#download-zip')).toBeNull()
+
+    app.button('Next: Split days')
+    expect(app.doc.querySelector('[data-step="2"]')?.getAttribute('aria-current')).toBe('step')
+    expect(app.doc.activeElement).toBe(app.doc.querySelector('#wizard-heading'))
+
+    app.button('Back')
+    expect(app.doc.querySelector('[data-step="1"]')?.getAttribute('aria-current')).toBe('step')
+    expect(rows()[0].textContent).toContain('east.gpx')
+
+    app.button('Full editor')
+    expect(fullBtn.getAttribute('aria-pressed')).toBe('true')
+    expect(app.doc.querySelector<HTMLElement>('.tabs')?.hidden).toBe(false)
+    expect(app.doc.querySelector('#download-poster')).not.toBeNull()
+    expect(rows()[0].textContent).toContain('east.gpx')
+
+    app.button('Guided wizard')
+    expect(wizardBtn.getAttribute('aria-pressed')).toBe('true')
+    expect(app.doc.querySelector('#download-poster')).toBeNull()
+  } finally { app.dom.window.close() }
+})
+
+test('Step 1 can start a photo-only rest day before any GPX is imported', async()=>{
+  const app=await open()
+  try {
+    app.button('Start with a rest day')
+    expect(app.doc.querySelector('#itinerary')?.textContent).toContain('Rest day added')
+    expect(app.doc.querySelector('#output svg')?.textContent).toContain('Day 1')
+  } finally { app.dom.window.close() }
+})

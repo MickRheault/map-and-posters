@@ -61,14 +61,26 @@ function download(blob:Blob,name:string) {
   setTimeout(()=>URL.revokeObjectURL(a.href),60000)
 }
 
-export function mountOutput(host:HTMLElement,project:Project,notify:()=>void) {
-  const onChange=()=>{mountOutput(host,project,notify);notify()}
+export type OutputMode = 'full' | 'preview'
+
+export function mountOutput(host:HTMLElement,project:Project,notify:()=>void,mode:OutputMode='full') {
+  const onChange=()=>{mountOutput(host,project,notify,mode);notify()}
   const targets=availablePosters(project), state=project.output
   if(!project.days.length && !project.photos.length) {host.replaceChildren();return}
   const target=targets.find(t=>t.key===state.active) || targets[0]
   const eligible=posterPlaces(project,target)
   const checked=(v:boolean)=>v?' checked':''
   const options=targets.map(t=>'<option value="'+escapeText(t.key)+'"'+(target.key===t.key?' selected':'')+'>'+escapeText(t.name)+'</option>').join('')
+  const svg=renderPoster(project,target.key)
+  const previewHeader='<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label>Poster <select id="poster-target">'+options+'</select></label><label><input type="checkbox" id="poster-phone"'+checked(state.phone)+'> Phone width</label>'+(mode==='full'?'<button id="download-poster">Download '+state.format.toUpperCase()+'</button>':'')+'</div>'
+  const previewCanvas='<div id="poster-preview" style="margin:18px auto;width:'+ (state.phone?'375px':'min(100%, 560px)')+';max-width:100%;line-height:0;box-shadow:0 4px 16px #183e3422">'+svg+'</div>'
+  if (mode==='preview') {
+    host.innerHTML=previewHeader+previewCanvas
+    const get=<T extends HTMLElement>(selector:string)=>host.querySelector<T>(selector)!
+    get<HTMLSelectElement>('#poster-target').onchange=e=>{state.active=(e.currentTarget as HTMLSelectElement).value;onChange()}
+    get<HTMLInputElement>('#poster-phone').onchange=e=>{state.phone=(e.currentTarget as HTMLInputElement).checked;onChange()}
+    return
+  }
   const checks=targets.map(t=>'<label><input type="checkbox" data-poster-key="'+escapeText(t.key)+'"'+checked(state.selected.includes(t.key))+'>'+escapeText(t.name)+'</label>').join(' ')
   const days=targets.filter(t=>t.key.startsWith('day:')).map(t=>'<label><input type="checkbox" data-group-day="'+escapeText(t.days[0].id)+'">'+escapeText(t.name)+'</label>').join(' ')
   const pins=eligible.map(p=>{
@@ -77,11 +89,9 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void) {
     const options=Object.entries(modes).map(([key,name])=>'<option value="'+key+'"'+(selected===key?' selected':'')+'>'+name+'</option>').join('')
     return '<div><label><input type="checkbox" data-visibility="'+escapeText(p.id)+'"'+checked(state.placeVisibility?.[target.key]?.[p.id] ?? p.visible)+'>'+escapeText(p.name)+'</label> <select aria-label="Printed label for '+escapeText(p.name)+'" data-place-text="'+escapeText(p.id)+'">'+options+'</select></div>'
   }).join('')
-  const svg=renderPoster(project,target.key)
   const openDetails=new Set(Array.from(host.querySelectorAll('details[open]')).map(d=>d.id))
   const open=(id:string)=>openDetails.has(id)?' open':''
-  host.innerHTML='<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label>Poster <select id="poster-target">'+options+'</select></label><label><input type="checkbox" id="poster-phone"'+checked(state.phone)+'> Phone width</label><button id="download-poster">Download '+state.format.toUpperCase()+'</button></div>'+
-    '<div id="poster-preview" style="margin:18px auto;width:'+ (state.phone?'375px':'min(100%, 560px)')+';max-width:100%;line-height:0;box-shadow:0 4px 16px #183e3422">'+svg+'</div>'+
+  host.innerHTML=previewHeader+previewCanvas+
     '<details id="poster-style"'+open('poster-style')+'><summary>Poster style</summary><fieldset><label>Trip title <input type="text" id="poster-title" maxlength="100" value="'+escapeText(state.title)+'"></label> <label>Credit <input type="text" id="poster-credit" maxlength="140" value="'+escapeText(state.credit)+'"></label> <label>Accent <input id="poster-accent" type="color" value="'+state.accent+'"></label><p>'+
     (['showDistance','showPeak','showProfile'] as const).map((prop,i)=>'<label><input type="checkbox" data-stat="'+prop+'"'+checked(state[prop])+'>'+['Distance','Highest point','Elevation profile'][i]+'</label>').join(' ')+'</p></fieldset></details>'+
     (eligible.length?'<details id="poster-labels"'+open('poster-labels')+'><summary>Map labels</summary><fieldset><legend>Places on this poster</legend>'+pins+'<p>Drag a map label to move it. Keyboard users can focus a label and use the arrow keys.</p><button id="reset-labels">Reset label positions</button></fieldset></details>':'')+

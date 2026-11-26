@@ -116,12 +116,15 @@ export function visitCandidates(project:AssetProject,day:Day,place:Place) {
   return options.filter(o=>o.km<=closest+0.5)
 }
 
-export function mountAssets(host:HTMLElement,project:AssetProject,onChange:()=>void) {
+export type AssetsSection = 'all' | 'places' | 'photos'
+
+export function mountAssets(host:HTMLElement,project:AssetProject,onChange:()=>void,section:AssetsSection='all') {
   host.replaceChildren()
   const placesPanel=element('section'),photosPanel=element('section')
-  host.append(placesPanel,photosPanel)
+  if (section !== 'photos') host.append(placesPanel)
+  if (section !== 'places') host.append(photosPanel)
   const dayOptions=():[string,string][]=>project.days.map(d=>[d.id,dayName(project,d)])
-  const rerender=()=>{onChange(); if (host.contains(placesPanel)) mountAssets(host,project,onChange)}
+  const rerender=()=>{onChange(); if (host.contains(placesPanel) || host.contains(photosPanel)) mountAssets(host,project,onChange,section)}
   placesPanel.append(element('h3','Places & visits'))
   const name=input(''),location=input(''),notice=element('p')
   location.placeholder='Latitude, longitude or map link'

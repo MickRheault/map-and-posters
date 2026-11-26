@@ -6,19 +6,31 @@
 <title>Map &amp; Posters — Trip editor</title>
 <style>
 :root{color-scheme:light;--ink:#173b33;--muted:#52685e;--paper:#fcfaf2;--line:#c9cfc1;--accent:#b45132;font:15px/1.45 "DM Sans",system-ui,sans-serif;color:var(--ink);background:#e4e6dc}*{box-sizing:border-box}
-body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color:#fffae9;display:flex;align-items:center;gap:20px;justify-content:space-between}.brand{font:600 22px Georgia,serif;letter-spacing:-.5px}.brand span{color:#e4b97f}#storage-status{font-size:13px}.workspace{display:grid;grid-template-columns:minmax(330px,37%) minmax(0,1fr);min-height:calc(100vh - 62px)}aside{background:var(--paper);padding:24px clamp(18px,2.5vw,42px);border-right:1px solid var(--line)}h1{margin:0 0 18px;font:42px/1 Georgia,serif;letter-spacing:-1.8px}h2{font:26px/1.15 Georgia,serif;margin:18px 0 10px}h3{font-size:16px;margin:18px 0 8px}button,input,select,textarea{font:inherit;color:inherit;max-width:100%}button,input::file-selector-button,select{background:#fffef8;border:1px solid #aab7a8;border-radius:5px;padding:6px 10px;cursor:pointer}button:hover{border-color:#316b56;background:#e9eee4}button:disabled{opacity:.5;cursor:default}input[type=text],input[type=number],input[type=url],textarea{background:white;border:1px solid #acb8ab;border-radius:4px;padding:7px}input[type=range],input[type=checkbox]{accent-color:#23634d}button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid #bc6931;outline-offset:2px}
-.file-button{display:inline-flex;align-items:center;cursor:pointer;background:#206248;color:white;font-weight:650;border-radius:6px;padding:9px 16px;position:relative}.file-button input,.restore input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}.file-button:focus-within,.restore:focus-within{outline:3px solid #bc6931}.backup-tools{display:flex;align-items:center;gap:12px;margin:16px 0 6px}.restore{position:relative;text-decoration:underline;cursor:pointer}#message{font-size:14px;color:#81452e;overflow-wrap:anywhere}.tabs{display:flex;border-bottom:1px solid var(--line);gap:8px;margin:20px 0 12px}.tabs button{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;font-weight:650}.tabs button[aria-pressed=true]{border-color:var(--accent)}fieldset{border:1px solid var(--line);border-radius:6px;margin:12px 0;padding:10px;min-width:0}legend{font-weight:600}aside svg{max-width:100%;height:auto}details{margin:10px 0}summary{cursor:pointer;font-weight:600}#output{padding:20px clamp(14px,2vw,38px);min-width:0}#output svg{max-width:100%;height:auto}#output:empty::after{content:"Import a recording to preview your poster.";color:var(--muted)}[hidden]{display:none!important}@media(max-width:850px){.workspace{grid-template-columns:minmax(300px,42%) minmax(0,1fr)}}@media(max-width:660px){.workspace{display:block}aside{border-right:0}.topbar{gap:8px}}
+body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color:#fffae9;display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap}.brand{font:600 22px Georgia,serif;letter-spacing:-.5px}.brand span{color:#e4b97f}.top-tools{display:flex;align-items:center;gap:16px;flex-wrap:wrap}#storage-status{font-size:13px}.mode-toggle{display:inline-flex;background:#102b24;border-radius:6px;padding:3px;gap:3px}.mode-toggle button{background:transparent;border:0;color:#d6e3dc;padding:5px 11px;min-block-size:32px;font-size:13px;font-weight:600;border-radius:4px}.mode-toggle button:hover{background:#214f42;color:#fff}.mode-toggle button[aria-pressed=true]{background:#fcfaf2;color:var(--ink)}.workspace{display:grid;grid-template-columns:minmax(330px,37%) minmax(0,1fr);min-height:calc(100vh - 62px)}aside{background:var(--paper);padding:24px clamp(18px,2.5vw,42px);border-right:1px solid var(--line)}h1{margin:0 0 14px;font:42px/1 Georgia,serif;letter-spacing:-1.8px}h2{font:26px/1.15 Georgia,serif;margin:18px 0 10px}h3{font-size:16px;margin:18px 0 8px}button,input,select,textarea{font:inherit;color:inherit;max-width:100%}button,input::file-selector-button,select{background:#fffef8;border:1px solid #aab7a8;border-radius:5px;padding:6px 10px;min-block-size:34px;cursor:pointer}button:hover{border-color:#316b56;background:#e9eee4}button:disabled{opacity:.5;cursor:default}input[type=text],input[type=number],input[type=url],textarea{background:white;border:1px solid #acb8ab;border-radius:4px;padding:7px}input[type=range],input[type=checkbox]{accent-color:#23634d}button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible,select:focus-visible,h2:focus-visible{outline:3px solid #bc6931;outline-offset:2px}
+.stepper{margin:0 0 16px}.stepper ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}.stepper button{font-size:13px;padding:5px 9px;min-block-size:32px;border-radius:999px;background:#f2f4ec;border-color:#c9cfc1}.stepper button[aria-current=step]{background:#206248;border-color:#206248;color:white;font-weight:650}.wizard-head h2{margin:6px 0 6px;font-size:24px}.wizard-head p{margin:0 0 14px;color:var(--muted);font-size:14px}.wizard-nav{display:flex;justify-content:space-between;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}.wizard-primary{background:#206248;border-color:#206248;color:white;font-weight:650}.wizard-primary:hover{background:#184e39;border-color:#184e39}.wizard-tip{background:#f2f4ec;border:1px solid var(--line);border-radius:6px;padding:12px;font-size:14px;margin:12px 0}
+.file-button{display:inline-flex;align-items:center;cursor:pointer;background:#206248;color:white;font-weight:650;border-radius:6px;padding:9px 16px;min-block-size:40px;position:relative}.file-button input,.restore input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}.file-button:focus-within,.restore:focus-within{outline:3px solid #bc6931}.backup-tools{display:flex;align-items:center;gap:12px;margin:16px 0 6px;flex-wrap:wrap}.restore{position:relative;text-decoration:underline;cursor:pointer;padding:4px 0}#message{font-size:14px;color:#81452e;overflow-wrap:anywhere}.tabs{display:flex;border-bottom:1px solid var(--line);gap:8px;margin:20px 0 12px}.tabs button{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;font-weight:650}.tabs button[aria-pressed=true]{border-color:var(--accent)}fieldset{border:1px solid var(--line);border-radius:6px;margin:12px 0;padding:10px;min-width:0}legend{font-weight:600}aside svg{max-width:100%;height:auto}details{margin:10px 0}summary{cursor:pointer;font-weight:600}#output{padding:20px clamp(14px,2vw,38px);min-width:0}#output svg{max-width:100%;height:auto}#output:empty::after{content:"Import a recording to preview your poster.";color:var(--muted)}[hidden]{display:none!important}@media(max-width:850px){.workspace{grid-template-columns:minmax(300px,42%) minmax(0,1fr)}}@media(max-width:660px){.workspace{display:block}aside{border-right:0}.topbar{gap:8px}}
 #assets label,#itinerary label{display:grid;gap:3px;margin:8px 0}#assets label:has(input[type=checkbox]),#itinerary label:has(input[type=checkbox]){display:flex;align-items:center;gap:6px}#assets details{padding:6px 0;border-bottom:1px solid var(--line)}#assets button,#itinerary button{margin:3px 4px 3px 0}#assets summary,.recording-row{overflow-wrap:anywhere}.recording-row small{display:block;color:#81452e}aside label input[type=range]{width:100%}
 </style>
 </head>
 <body>
-<header class="topbar"><div class="brand">Map <span>&amp;</span> Posters</div><span id="storage-status" role="status"></span></header>
+<header class="topbar"><div class="brand">Map <span>&amp;</span> Posters</div><div class="top-tools"><div class="mode-toggle" role="group" aria-label="Editor mode"><button type="button" data-mode="wizard" aria-pressed="true">Guided wizard</button><button type="button" data-mode="full" aria-pressed="false">Full editor</button></div><span id="storage-status" role="status"></span></div></header>
 <main class="workspace"><aside><h1>Trip editor</h1>
-<label class="file-button">Import GPX<input id="file" type="file" multiple accept=".gpx,application/gpx+xml"></label>
-<div class="backup-tools"><button id="backup" type="button">Download backup</button><label class="restore">Restore backup<input id="restore" aria-label="Restore backup" type="file" accept=".json"></label></div>
+<nav id="wizard-stepper" class="stepper" aria-label="Trip steps"><ol>
+<li><button type="button" data-step="1" aria-current="step">1. Import GPX</button></li>
+<li><button type="button" data-step="2">2. Split days</button></li>
+<li><button type="button" data-step="3">3. Places</button></li>
+<li><button type="button" data-step="4">4. Photos</button></li>
+<li><button type="button" data-step="5">5. Style &amp; export</button></li>
+</ol></nav>
+<div id="wizard-head" class="wizard-head"><h2 id="wizard-heading" tabindex="-1"></h2><p id="wizard-guide"></p></div>
+<div id="import-tools"><label class="file-button">Import GPX<input id="file" type="file" multiple accept=".gpx,application/gpx+xml"></label></div>
+<div id="backup-tools" class="backup-tools"><button id="backup" type="button">Download backup</button><label class="restore">Restore backup<input id="restore" aria-label="Restore backup" type="file" accept=".json"></label></div>
 <div id="message" role="status"></div>
-<nav class="tabs" aria-label="Trip editing tools"><button data-tab="itinerary" aria-pressed="true">Itinerary</button><button data-tab="assets" aria-pressed="false">Places &amp; photos</button></nav>
-<div id="itinerary"></div><div id="assets" hidden></div></aside>
+<nav class="tabs" aria-label="Trip editing tools" hidden><button type="button" data-tab="itinerary" aria-pressed="true">Itinerary</button><button type="button" data-tab="assets" aria-pressed="false">Places &amp; photos</button></nav>
+<div id="itinerary"></div><div id="assets" hidden></div>
+<div id="wizard-step-extra"></div>
+<div id="wizard-nav" class="wizard-nav"><button id="wizard-back" type="button" enterkeyhint="previous">Back</button><button id="wizard-next" class="wizard-primary" type="button" enterkeyhint="next"></button></div>
+</aside>
 <section id="output" aria-label="Poster studio"></section></main>
 <script>(() => {
   // src/track.ts
@@ -601,15 +613,18 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     const closest = options.reduce((min, o) => Math.min(min, o.km), Infinity);
     return options.filter((o) => o.km <= closest + 0.5);
   }
-  function mountAssets(host, project, onChange) {
+  function mountAssets(host, project, onChange, section = "all") {
     host.replaceChildren();
     const placesPanel = element("section"), photosPanel = element("section");
-    host.append(placesPanel, photosPanel);
+    if (section !== "photos")
+      host.append(placesPanel);
+    if (section !== "places")
+      host.append(photosPanel);
     const dayOptions = () => project.days.map((d) => [d.id, dayName(project, d)]);
     const rerender = () => {
       onChange();
-      if (host.contains(placesPanel))
-        mountAssets(host, project, onChange);
+      if (host.contains(placesPanel) || host.contains(photosPanel))
+        mountAssets(host, project, onChange, section);
     };
     placesPanel.append(element("h3", "Places & visits"));
     const name = input(""), location = input(""), notice = element("p");
@@ -1009,52 +1024,60 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     draw();
     return panel;
   }
-  function mountItinerary(host, project, onChange, onMerge) {
+  function mountItinerary(host, project, onChange, onMerge, section = "all") {
     host.replaceChildren();
     function commit() {
-      mountItinerary(host, project, onChange, onMerge);
+      mountItinerary(host, project, onChange, onMerge, section);
       onChange();
     }
     if (!project.recordings.length && !project.days.length) {
-      host.append(button2("Add a rest day", () => {
+      host.append(button2(section === "recordings" ? "Start with a rest day" : "Add a rest day", () => {
         insertRestDay(project, 0);
         commit();
       }));
       return;
     }
-    if (project.recordings.length)
-      host.append(element2("h3", "Recordings"));
-    project.recordings.forEach((rec, i) => {
-      const row = element2("div");
-      row.className = "recording-row";
-      const checkbox = element2("input");
-      checkbox.type = "checkbox";
-      checkbox.checked = rec.included;
-      checkbox.onchange = () => {
-        rec.included = checkbox.checked;
-        commit();
-      };
-      const label = element2("label");
-      label.append(checkbox, " " + rec.name);
-      const up = button2("↑", () => {
-        moveRecording(project, i, -1);
-        commit();
-      }, i === 0);
-      const down = button2("↓", () => {
-        moveRecording(project, i, 1);
-        commit();
-      }, i === project.recordings.length - 1);
-      up.setAttribute("aria-label", "Move " + rec.name + " earlier");
-      down.setAttribute("aria-label", "Move " + rec.name + " later");
-      row.append(label, up, down);
-      const start = rec.track[0]?.[0]?.time;
-      if (start)
-        row.append(element2("small", start));
-      const overlaps = project.recordings.slice(0, i).filter((other) => possibleOverlap(rec, other));
-      if (overlaps.length)
-        row.append(element2("small", "Possible overlap with " + overlaps.map((r) => r.name).join(", ")));
-      host.append(row);
-    });
+    if (section !== "days") {
+      if (project.recordings.length)
+        host.append(element2("h3", "Recordings"));
+      project.recordings.forEach((rec, i) => {
+        const row = element2("div");
+        row.className = "recording-row";
+        const checkbox = element2("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = rec.included;
+        checkbox.onchange = () => {
+          rec.included = checkbox.checked;
+          commit();
+        };
+        const label = element2("label");
+        label.append(checkbox, " " + rec.name);
+        const up = button2("↑", () => {
+          moveRecording(project, i, -1);
+          commit();
+        }, i === 0);
+        const down = button2("↓", () => {
+          moveRecording(project, i, 1);
+          commit();
+        }, i === project.recordings.length - 1);
+        up.setAttribute("aria-label", "Move " + rec.name + " earlier");
+        down.setAttribute("aria-label", "Move " + rec.name + " later");
+        row.append(label, up, down);
+        const start = rec.track[0]?.[0]?.time;
+        if (start)
+          row.append(element2("small", start));
+        const overlaps = project.recordings.slice(0, i).filter((other) => possibleOverlap(rec, other));
+        if (overlaps.length)
+          row.append(element2("small", "Possible overlap with " + overlaps.map((r) => r.name).join(", ")));
+        host.append(row);
+      });
+    }
+    if (section === "recordings") {
+      if (!project.recordings.length && project.days.length) {
+        host.append(element2("p", "Rest day added. Continue to Step 2 to name it or Step 4 to add photos."));
+      }
+      return;
+    }
     host.append(element2("h3", "Itinerary"));
     const selector = element2("select");
     project.days.forEach((day) => selector.add(option2(dayName(project, day) + (day.date ? " · " + day.date : ""), day.id)));
@@ -1505,9 +1528,9 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 60000);
   }
-  function mountOutput(host, project, notify) {
+  function mountOutput(host, project, notify, mode = "full") {
     const onChange = () => {
-      mountOutput(host, project, notify);
+      mountOutput(host, project, notify, mode);
       notify();
     };
     const targets = availablePosters(project), state = project.output;
@@ -1519,6 +1542,22 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     const eligible = posterPlaces(project, target);
     const checked = (v) => v ? " checked" : "";
     const options = targets.map((t) => '<option value="' + escapeText(t.key) + '"' + (target.key === t.key ? " selected" : "") + ">" + escapeText(t.name) + "</option>").join("");
+    const svg = renderPoster(project, target.key);
+    const previewHeader = '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label>Poster <select id="poster-target">' + options + '</select></label><label><input type="checkbox" id="poster-phone"' + checked(state.phone) + "> Phone width</label>" + (mode === "full" ? '<button id="download-poster">Download ' + state.format.toUpperCase() + "</button>" : "") + "</div>";
+    const previewCanvas = '<div id="poster-preview" style="margin:18px auto;width:' + (state.phone ? "375px" : "min(100%, 560px)") + ';max-width:100%;line-height:0;box-shadow:0 4px 16px #183e3422">' + svg + "</div>";
+    if (mode === "preview") {
+      host.innerHTML = previewHeader + previewCanvas;
+      const get = (selector) => host.querySelector(selector);
+      get("#poster-target").onchange = (e) => {
+        state.active = e.currentTarget.value;
+        onChange();
+      };
+      get("#poster-phone").onchange = (e) => {
+        state.phone = e.currentTarget.checked;
+        onChange();
+      };
+      return;
+    }
     const checks = targets.map((t) => '<label><input type="checkbox" data-poster-key="' + escapeText(t.key) + '"' + checked(state.selected.includes(t.key)) + ">" + escapeText(t.name) + "</label>").join(" ");
     const days = targets.filter((t) => t.key.startsWith("day:")).map((t) => '<label><input type="checkbox" data-group-day="' + escapeText(t.days[0].id) + '">' + escapeText(t.name) + "</label>").join(" ");
     const pins = eligible.map((p) => {
@@ -1527,10 +1566,9 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
       const options = Object.entries(modes).map(([key, name]) => '<option value="' + key + '"' + (selected === key ? " selected" : "") + ">" + name + "</option>").join("");
       return '<div><label><input type="checkbox" data-visibility="' + escapeText(p.id) + '"' + checked(state.placeVisibility?.[target.key]?.[p.id] ?? p.visible) + ">" + escapeText(p.name) + '</label> <select aria-label="Printed label for ' + escapeText(p.name) + '" data-place-text="' + escapeText(p.id) + '">' + options + "</select></div>";
     }).join("");
-    const svg = renderPoster(project, target.key);
     const openDetails = new Set(Array.from(host.querySelectorAll("details[open]")).map((d) => d.id));
     const open = (id) => openDetails.has(id) ? " open" : "";
-    host.innerHTML = '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label>Poster <select id="poster-target">' + options + '</select></label><label><input type="checkbox" id="poster-phone"' + checked(state.phone) + '> Phone width</label><button id="download-poster">Download ' + state.format.toUpperCase() + "</button></div>" + '<div id="poster-preview" style="margin:18px auto;width:' + (state.phone ? "375px" : "min(100%, 560px)") + ';max-width:100%;line-height:0;box-shadow:0 4px 16px #183e3422">' + svg + "</div>" + '<details id="poster-style"' + open("poster-style") + '><summary>Poster style</summary><fieldset><label>Trip title <input type="text" id="poster-title" maxlength="100" value="' + escapeText(state.title) + '"></label> <label>Credit <input type="text" id="poster-credit" maxlength="140" value="' + escapeText(state.credit) + '"></label> <label>Accent <input id="poster-accent" type="color" value="' + state.accent + '"></label><p>' + ["showDistance", "showPeak", "showProfile"].map((prop, i) => '<label><input type="checkbox" data-stat="' + prop + '"' + checked(state[prop]) + ">" + ["Distance", "Highest point", "Elevation profile"][i] + "</label>").join(" ") + "</p></fieldset></details>" + (eligible.length ? '<details id="poster-labels"' + open("poster-labels") + "><summary>Map labels</summary><fieldset><legend>Places on this poster</legend>" + pins + '<p>Drag a map label to move it. Keyboard users can focus a label and use the arrow keys.</p><button id="reset-labels">Reset label positions</button></fieldset></details>' : "") + '<details id="poster-collection"' + open("poster-collection") + "><summary>Poster collection</summary><fieldset><legend>Group days on one poster</legend>" + days + '<p><label>Group name <input id="group-name" type="text" maxlength="70"></label> <button id="add-group">Create group</button></p></fieldset><fieldset><legend>Include in ZIP</legend>' + checks + "</fieldset></details>" + '<div style="display:flex;gap:12px;align-items:center"><label>File format <select id="poster-format"><option value="jpg">JPG</option><option value="png">PNG</option></select></label><button id="download-zip">Download ZIP</button></div><p id="output-status" role="status"></p>';
+    host.innerHTML = previewHeader + previewCanvas + '<details id="poster-style"' + open("poster-style") + '><summary>Poster style</summary><fieldset><label>Trip title <input type="text" id="poster-title" maxlength="100" value="' + escapeText(state.title) + '"></label> <label>Credit <input type="text" id="poster-credit" maxlength="140" value="' + escapeText(state.credit) + '"></label> <label>Accent <input id="poster-accent" type="color" value="' + state.accent + '"></label><p>' + ["showDistance", "showPeak", "showProfile"].map((prop, i) => '<label><input type="checkbox" data-stat="' + prop + '"' + checked(state[prop]) + ">" + ["Distance", "Highest point", "Elevation profile"][i] + "</label>").join(" ") + "</p></fieldset></details>" + (eligible.length ? '<details id="poster-labels"' + open("poster-labels") + "><summary>Map labels</summary><fieldset><legend>Places on this poster</legend>" + pins + '<p>Drag a map label to move it. Keyboard users can focus a label and use the arrow keys.</p><button id="reset-labels">Reset label positions</button></fieldset></details>' : "") + '<details id="poster-collection"' + open("poster-collection") + "><summary>Poster collection</summary><fieldset><legend>Group days on one poster</legend>" + days + '<p><label>Group name <input id="group-name" type="text" maxlength="70"></label> <button id="add-group">Create group</button></p></fieldset><fieldset><legend>Include in ZIP</legend>' + checks + "</fieldset></details>" + '<div style="display:flex;gap:12px;align-items:center"><label>File format <select id="poster-format"><option value="jpg">JPG</option><option value="png">PNG</option></select></label><button id="download-zip">Download ZIP</button></div><p id="output-status" role="status"></p>';
     const get = (selector) => host.querySelector(selector);
     const message = get("#output-status");
     const change = (selector, fn) => {
@@ -1839,8 +1877,29 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
   var itinerary = node("itinerary");
   var assets = node("assets");
   var output = node("output");
+  var importTools = node("import-tools");
+  var backupTools = node("backup-tools");
+  var tabs = document.querySelector(".tabs");
+  var stepper = node("wizard-stepper");
+  var wizardHead = node("wizard-head");
+  var wizardHeading = node("wizard-heading");
+  var wizardGuide = node("wizard-guide");
+  var wizardExtra = node("wizard-step-extra");
+  var wizardNav = node("wizard-nav");
+  var wizardBack = node("wizard-back");
+  var wizardNext = node("wizard-next");
+  var steps = [
+    { label: "Import GPX", title: "Step 1: Import GPX & Order", guide: "Upload one or more GPX files, check their order, and exclude duplicate recordings. You can also restore a saved backup or start with a photo-only rest day." },
+    { label: "Split days", title: "Step 2: Split Days & Rest Days", guide: "Pick a day, click the map or elevation profile to set boundaries, rename or recolour days, and insert rest days." },
+    { label: "Places", title: "Step 3: Places & Visits", guide: "Review imported GPX waypoints, add stops by coordinates or map click, choose which places print on posters, and record overnight stays." },
+    { label: "Photos", title: "Step 4: Photos & Crops", guide: "Assign photos to the full trip or a specific day, pick a lead photo, adjust crops, and approve photo GPS pins." },
+    { label: "Style & export", title: "Step 5: Style, Labels & Export", guide: "Use the Poster studio on the right to customize title, colours, and map labels, group days, and download JPG, PNG, or ZIP posters." }
+  ];
   var project = newProject();
   var revision = 0;
+  var mode = "wizard";
+  var step = 1;
+  var fullTab = "itinerary";
   function changed() {
     const edit = ++revision;
     status.textContent = "Saving…";
@@ -1874,25 +1933,72 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     }
   }
   function showItinerary() {
+    const section = mode === "full" ? "all" : step === 1 ? "recordings" : step === 2 ? "days" : undefined;
+    if (!section)
+      return;
     mountItinerary(itinerary, project, () => {
       showAssets();
       showOutput();
       changed();
-    }, mergeDay);
+    }, mergeDay, section);
   }
   function showAssets() {
+    const section = mode === "full" ? "all" : step === 3 ? "places" : step === 4 ? "photos" : undefined;
+    if (!section)
+      return;
     mountAssets(assets, project, () => {
       showOutput();
       changed();
-    });
+    }, section);
   }
   function showOutput() {
-    mountOutput(output, project, changed);
+    mountOutput(output, project, changed, mode === "full" || step === 5 ? "full" : "preview");
+  }
+  function syncChrome() {
+    const wizard = mode === "wizard";
+    document.querySelectorAll("[data-mode]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+    });
+    stepper.hidden = wizardHead.hidden = wizardNav.hidden = !wizard;
+    tabs.hidden = wizard;
+    importTools.hidden = wizard && step !== 1;
+    backupTools.hidden = wizard && step !== 1 && step !== 5;
+    itinerary.hidden = wizard ? step > 2 : fullTab !== "itinerary";
+    assets.hidden = wizard ? step !== 3 && step !== 4 : fullTab !== "assets";
+    wizardExtra.replaceChildren();
+    if (wizard) {
+      const info = steps[step - 1];
+      wizardHeading.textContent = info.title;
+      wizardGuide.textContent = info.guide;
+      document.querySelectorAll("[data-step]").forEach((button) => {
+        if (Number(button.dataset.step) === step)
+          button.setAttribute("aria-current", "step");
+        else
+          button.removeAttribute("aria-current");
+      });
+      wizardBack.disabled = step === 1;
+      wizardNext.hidden = step === steps.length;
+      if (step < steps.length)
+        wizardNext.textContent = "Next: " + steps[step].label;
+      if (step === 5) {
+        const tip = document.createElement("p");
+        tip.className = "wizard-tip";
+        tip.textContent = "Your trip saves automatically in this browser. Download a backup file above if you plan to move browsers or clear site data.";
+        wizardExtra.append(tip);
+      }
+    }
   }
   function render() {
+    syncChrome();
     showItinerary();
     showAssets();
     showOutput();
+  }
+  function goStep(next, focusHeading = true) {
+    step = Math.max(1, Math.min(steps.length, next));
+    render();
+    if (focusHeading && mode === "wizard")
+      wizardHeading.focus();
   }
   function busy(value) {
     fileInput.disabled = restoreInput.disabled = backupButton.disabled = value;
@@ -1969,12 +2075,25 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
       restoreInput.value = "";
     }
   };
+  document.querySelectorAll("[data-mode]").forEach((button) => {
+    button.onclick = () => {
+      const next = button.dataset.mode === "full" ? "full" : "wizard";
+      if (next === mode)
+        return;
+      mode = next;
+      render();
+    };
+  });
+  document.querySelectorAll("[data-step]").forEach((button) => {
+    button.onclick = () => goStep(Number(button.dataset.step));
+  });
+  wizardBack.onclick = () => goStep(step - 1);
+  wizardNext.onclick = () => goStep(step + 1);
   document.querySelectorAll("[data-tab]").forEach((button) => {
     button.onclick = () => {
-      const tab = button.dataset.tab;
-      itinerary.hidden = tab !== "itinerary";
-      assets.hidden = tab !== "assets";
+      fullTab = button.dataset.tab === "assets" ? "assets" : "itinerary";
       document.querySelectorAll("[data-tab]").forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+      syncChrome();
     };
   });
   async function start() {
