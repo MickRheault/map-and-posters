@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+root=$(git rev-parse --show-toplevel)
+worktree=
+cleanup() {
+  if [ -n "$worktree" ]; then
+    git -C "$root" worktree remove --force "$worktree"
+    worktree=
+  fi
+}
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
+checked=' '
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$local_sha" in 0000000000000000000000000000000000000000) continue ;; esac
+  commit=$(git rev-parse "$local_sha^{commit}")
+  case "$checked" in *" $commit "*) continue ;; esac
+  worktree=$(mktemp -d)
+  git -C "$root" worktree add --quiet --detach "$worktree" "$commit"
+  (
+    cd "$worktree"
+    if [ -d "$root/node_modules" ] && cmp -s package-lock.json "$root/package-lock.json"; then
+      ln -s "$root/node_modules" node_modules
+    else
+      npm ci
+    fi
+    npm run verify
+  )
+  cleanup
+  checked="$checked$commit "
+done

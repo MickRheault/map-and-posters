@@ -1,0 +1,5 @@
+const result = await Bun.build({entrypoints:['src/app.ts'],format:'iife',target:'browser'})
+if (!result.success) throw new AggregateError(result.logs)
+const html = await Bun.file('src/editor.html').text()
+const script = await result.outputs[0].text()
+await Bun.write('index.html', html.replace('/* APP */', () => script))
