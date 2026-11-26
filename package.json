@@ -1,0 +1,17 @@
+{
+  "name": "map-and-posters",
+  "private": true,
+  "scripts": {
+    "build": "bun build.ts",
+    "test": "bun test",
+    "check": "tsc --noEmit && bun test && bun build.ts",
+    "verify": "npm run check && git diff --exit-code -- index.html",
+    "hooks": "git config core.hooksPath .githooks",
+    "prepare": "if git rev-parse --git-dir >/dev/null 2>&1; then npm run hooks; fi"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0",
+    "sharp": "0.35.5",
+    "typescript": "6.0.3"
+  }
+}

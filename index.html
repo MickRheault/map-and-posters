@@ -1,17 +1,40 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Map &amp; Posters</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map &amp; Posters — Trip editor</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font:16px/1.5 Inter,Helvetica,Arial,sans-serif;color:#163e38;background:#e1e5da}header{padding:18px 4vw;background:#163e38;color:#fff9e8;font-weight:700;font-size:20px}main{display:grid;grid-template-columns:minmax(260px,330px) 1fr;min-height:calc(100vh - 66px)}aside{padding:36px 28px;background:#f8f7ef}h1{font:normal 38px/1.1 Georgia,serif;margin:0 0 32px}label{display:block;font-weight:bold;margin:24px 0 8px}input,button{font:inherit;max-width:100%}input[type=text]{width:100%;padding:10px;border:1px solid #aeb8a7;border-radius:4px}input::file-selector-button,button{padding:10px 16px;cursor:pointer;border-radius:4px;border:1px solid #52796a}button{background:#175847;color:white;margin-top:25px}button:disabled{opacity:.5;cursor:default}#status{overflow-wrap:anywhere;font-size:14px}section{display:grid;place-items:center;padding:24px}#preview{width:min(100%,62vh);text-align:center}svg{width:100%;height:auto;display:block;box-shadow:0 6px 26px #263d302b} @media(max-width:720px){main{grid-template-columns:1fr}}
-</style><header>Map &amp; Posters</header><main><aside><h1>Trip poster</h1><label for="file">GPX recording</label><input type="file" id="file" accept=".gpx,application/gpx+xml"><label for="title">Poster title</label><input type="text" id="title" maxlength="50" disabled><button id="save" disabled>Download JPG</button><p role="status" id="status"></p></aside><section aria-label="Poster preview"><div id="preview">Choose a GPX recording to preview your trip.</div></section></main><script>(() => {
+:root{color-scheme:light;--ink:#173b33;--muted:#52685e;--paper:#fcfaf2;--line:#c9cfc1;--accent:#b45132;font:15px/1.45 "DM Sans",system-ui,sans-serif;color:var(--ink);background:#e4e6dc}*{box-sizing:border-box}
+body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color:#fffae9;display:flex;align-items:center;gap:20px;justify-content:space-between}.brand{font:600 22px Georgia,serif;letter-spacing:-.5px}.brand span{color:#e4b97f}#storage-status{font-size:13px}.workspace{display:grid;grid-template-columns:minmax(330px,37%) minmax(0,1fr);min-height:calc(100vh - 62px)}aside{background:var(--paper);padding:24px clamp(18px,2.5vw,42px);border-right:1px solid var(--line)}h1{margin:0 0 18px;font:42px/1 Georgia,serif;letter-spacing:-1.8px}h2{font:26px/1.15 Georgia,serif;margin:18px 0 10px}h3{font-size:16px;margin:18px 0 8px}button,input,select,textarea{font:inherit;color:inherit;max-width:100%}button,input::file-selector-button,select{background:#fffef8;border:1px solid #aab7a8;border-radius:5px;padding:6px 10px;cursor:pointer}button:hover{border-color:#316b56;background:#e9eee4}button:disabled{opacity:.5;cursor:default}input[type=text],input[type=number],input[type=url],textarea{background:white;border:1px solid #acb8ab;border-radius:4px;padding:7px}input[type=range],input[type=checkbox]{accent-color:#23634d}button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid #bc6931;outline-offset:2px}
+.file-button{display:inline-flex;align-items:center;cursor:pointer;background:#206248;color:white;font-weight:650;border-radius:6px;padding:9px 16px;position:relative}.file-button input,.restore input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}.file-button:focus-within,.restore:focus-within{outline:3px solid #bc6931}.backup-tools{display:flex;align-items:center;gap:12px;margin:16px 0 6px}.restore{position:relative;text-decoration:underline;cursor:pointer}#message{font-size:14px;color:#81452e;overflow-wrap:anywhere}.tabs{display:flex;border-bottom:1px solid var(--line);gap:8px;margin:20px 0 12px}.tabs button{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;font-weight:650}.tabs button[aria-pressed=true]{border-color:var(--accent)}fieldset{border:1px solid var(--line);border-radius:6px;margin:12px 0;padding:10px;min-width:0}legend{font-weight:600}aside svg{max-width:100%;height:auto}details{margin:10px 0}summary{cursor:pointer;font-weight:600}#output{padding:20px clamp(14px,2vw,38px);min-width:0}#output svg{max-width:100%;height:auto}#output:empty::after{content:"Import a recording to preview your poster.";color:var(--muted)}[hidden]{display:none!important}@media(max-width:850px){.workspace{grid-template-columns:minmax(300px,42%) minmax(0,1fr)}}@media(max-width:660px){.workspace{display:block}aside{border-right:0}.topbar{gap:8px}}
+#assets label,#itinerary label{display:grid;gap:3px;margin:8px 0}#assets label:has(input[type=checkbox]),#itinerary label:has(input[type=checkbox]){display:flex;align-items:center;gap:6px}#assets details{padding:6px 0;border-bottom:1px solid var(--line)}#assets button,#itinerary button{margin:3px 4px 3px 0}#assets summary,.recording-row{overflow-wrap:anywhere}.recording-row small{display:block;color:#81452e}aside label input[type=range]{width:100%}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="brand">Map <span>&amp;</span> Posters</div><span id="storage-status" role="status"></span></header>
+<main class="workspace"><aside><h1>Trip editor</h1>
+<label class="file-button">Import GPX<input id="file" type="file" multiple accept=".gpx,application/gpx+xml"></label>
+<div class="backup-tools"><button id="backup" type="button">Download backup</button><label class="restore">Restore backup<input id="restore" aria-label="Restore backup" type="file" accept=".json"></label></div>
+<div id="message" role="status"></div>
+<nav class="tabs" aria-label="Trip editing tools"><button data-tab="itinerary" aria-pressed="true">Itinerary</button><button data-tab="assets" aria-pressed="false">Places &amp; photos</button></nav>
+<div id="itinerary"></div><div id="assets" hidden></div></aside>
+<section id="output" aria-label="Poster studio"></section></main>
+<script>(() => {
   // src/track.ts
   var rad = Math.PI / 180;
   function distance(a, b) {
     const h = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lon - a.lon) * rad / 2) ** 2;
     return 12742 * Math.asin(Math.sqrt(Math.min(1, h)));
   }
-  function parseTrack(xml) {
+  function parseGpx(xml) {
     const doc = new DOMParser().parseFromString(xml, "application/xml");
     if (doc.documentElement.localName !== "gpx" || doc.getElementsByTagName("parsererror").length)
       throw new Error("Choose a valid GPX file.");
+    return doc;
+  }
+  function parseTrack(input) {
+    const doc = typeof input === "string" ? parseGpx(input) : input;
     function* children(el, name) {
       for (let child = el.firstElementChild;child; child = child.nextElementSibling) {
         if (child.localName === name)
@@ -32,7 +55,11 @@
             continue;
           }
           const elevation = number(children(el, "ele").next().value?.textContent);
-          run.push({ lat, lon, ele: Number.isFinite(elevation) ? elevation : null });
+          const time = children(el, "time").next().value?.textContent?.trim();
+          const point = { lat, lon, ele: Number.isFinite(elevation) ? elevation : null };
+          if (time)
+            point.time = time;
+          run.push(point);
         }
         if (run.length)
           track.push(run);
@@ -64,119 +91,1904 @@
     return { lines, km, peak, low, west, east, north, south };
   }
 
-  // src/poster.ts
-  var escape = (s) => s.replace(/[<>&"']/g, (c) => "&#" + c.charCodeAt(0) + ";");
-  var fmt = (n) => n.toFixed(1);
-  function poster(track, title) {
-    const { lines, km, peak, low, west, east, north, south } = layout(track);
-    const hasProfile = Number.isFinite(peak);
-    const height = hasProfile ? 760 : 940;
-    const scale = Math.min(900 / (east - west || 0.000000001), height / (north - south || 0.000000001));
-    const paths = lines.map((line) => {
-      const coords = line.map((p) => [fmt(540 + (p.x - (east + west) / 2) * scale), fmt(190 + height / 2 - (p.y - (north + south) / 2) * scale)]);
-      return coords.length === 1 ? '<circle cx="' + coords[0][0] + '" cy="' + coords[0][1] + '" r="5"/>' : '<path d="M' + coords.join(" L") + '" fill="none"/>';
-    }).join("");
-    const label = (x, y, size, str) => `<text x="${x}" y="${y}" font-size="${size}">${escape(str)}</text>`;
-    let profile = "";
-    if (hasProfile) {
-      for (const line of lines) {
-        let finish = function() {
-          if (run.length)
-            profile += '<path d="M' + run.join(" L") + (run.length === 1 ? " l0.1 0" : "") + '"/>';
-          run = [];
+  // src/assets.ts
+  function validCoordinates(lat, lon) {
+    return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
+  }
+  var decimal = "([+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+))";
+  var pair = new RegExp("^\\s*" + decimal + "\\s*,\\s*" + decimal + "\\s*$");
+  function readCoordinates(value) {
+    function match(value, pattern) {
+      const m = pattern.exec(value);
+      if (!m)
+        return null;
+      const lat = Number(m[1]), lon = Number(m[2]);
+      return validCoordinates(lat, lon) ? { lat, lon } : null;
+    }
+    const direct = match(value, pair);
+    if (direct)
+      return direct;
+    let url;
+    try {
+      url = new URL(value.trim());
+    } catch {
+      return null;
+    }
+    if (!["http:", "https:"].includes(url.protocol))
+      return null;
+    const pins = Array.from(url.pathname.matchAll(new RegExp("!3d" + decimal + "!4d" + decimal, "g")));
+    if (pins.length)
+      return match(pins[pins.length - 1].slice(1, 3).join(","), pair);
+    for (const param of ["query", "q", "destination", "ll"]) {
+      const hit = match(url.searchParams.get(param) || "", pair);
+      if (hit)
+        return hit;
+    }
+    const mlat = url.searchParams.get("mlat"), mlon = url.searchParams.get("mlon");
+    if (mlat !== null && mlon !== null)
+      return match([mlat, mlon].join(","), pair);
+    if (/\/maps\/(?:place|search|dir)\//i.test(url.pathname))
+      return null;
+    return match(url.hash, new RegExp("^#map=\\d+(?:\\.\\d+)?/" + decimal + "/" + decimal + "$")) || match(url.pathname, new RegExp("/@" + decimal + "," + decimal + "(?:[,/]|$)"));
+  }
+  function addPlace(assets, name, coords, visible = true, category = "Place") {
+    if (!validCoordinates(coords.lat, coords.lon))
+      throw new Error("Enter a valid latitude and longitude.");
+    const place = { id: crypto.randomUUID(), name: name.trim() || "Unnamed place", lat: coords.lat, lon: coords.lon, category, visible };
+    assets.places.push(place);
+    return place;
+  }
+  function importWaypoints(assets, input) {
+    const root = (typeof input === "string" ? parseGpx(input) : input).documentElement;
+    let count = 0;
+    for (let el = root.firstElementChild;el; el = el.nextElementSibling) {
+      if (el.localName !== "wpt")
+        continue;
+      const lat = el.getAttribute("lat")?.trim(), lon = el.getAttribute("lon")?.trim();
+      if (!lat || !lon || !validCoordinates(Number(lat), Number(lon)))
+        continue;
+      const childText = (name) => Array.from(el.children).find((node) => node.localName === name)?.textContent?.trim();
+      addPlace(assets, childText("name") || "Waypoint", { lat: Number(lat), lon: Number(lon) }, false, childText("type") || "Place");
+      count++;
+    }
+    return count;
+  }
+  function xmlText(value) {
+    return value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function exportGpx(places, recordings) {
+    const pins = places.filter((place) => place.visible).map((place) => `<wpt lat="${place.lat}" lon="${place.lon}"><name>${xmlText(place.name)}</name><type>${xmlText(place.category)}</type></wpt>`);
+    const tracks = recordings.filter((r) => r.included).map((r) => {
+      const segments = r.track.map((points) => "<trkseg>" + points.map((point) => `<trkpt lat="${point.lat}" lon="${point.lon}">${point.ele === null ? "" : "<ele>" + point.ele + "</ele>"}${point.time ? "<time>" + xmlText(point.time) + "</time>" : ""}</trkpt>`).join("") + "</trkseg>");
+      return "<trk><name>" + xmlText(r.name) + "</name>" + segments.join("") + "</trk>";
+    });
+    return '<?xml version="1.0" encoding="UTF-8"?><gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Map &amp; Posters">' + pins.join("") + tracks.join("") + "</gpx>";
+  }
+  function tiffGps(bytes) {
+    const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const order = data.getUint16(0);
+    if (order !== 18761 && order !== 19789)
+      return;
+    const le = order === 18761;
+    const u16 = (offset) => data.getUint16(offset, le);
+    const u32 = (offset) => data.getUint32(offset, le);
+    if (u16(2) !== 42)
+      return;
+    function entry(table, tag) {
+      const count = u16(table);
+      if (table + 2 + count * 12 > bytes.length)
+        return;
+      for (let i = 0;i < count; i++) {
+        const offset = table + 2 + i * 12;
+        if (u16(offset) === tag)
+          return offset;
+      }
+    }
+    const gpsEntry = entry(u32(4), 34853);
+    if (gpsEntry === undefined || u16(gpsEntry + 2) !== 4 || u32(gpsEntry + 4) !== 1)
+      return;
+    const gps = u32(gpsEntry + 8);
+    function coord(refTag, positive, negative) {
+      const ref = entry(gps, refTag), val = entry(gps, refTag + 1);
+      if (ref === undefined || val === undefined || u16(ref + 2) !== 2 || u32(ref + 4) !== 2 || u16(val + 2) !== 5 || u32(val + 4) !== 3)
+        return NaN;
+      const sign = String.fromCharCode(data.getUint8(ref + 8));
+      if (sign !== positive && sign !== negative)
+        return NaN;
+      const start = u32(val + 8);
+      const rational = (i) => u32(start + i * 8) / u32(start + i * 8 + 4);
+      const degrees = rational(0) + rational(1) / 60 + rational(2) / 3600;
+      return sign === negative ? -degrees : degrees;
+    }
+    const lat = coord(1, "N", "S"), lon = coord(3, "E", "W");
+    if (validCoordinates(lat, lon))
+      return { lat, lon };
+  }
+  function photoGps(buffer) {
+    const bytes = new Uint8Array(buffer), view = new DataView(buffer);
+    try {
+      if (view.getUint16(0) === 65496) {
+        for (let i = 2;i + 4 <= bytes.length && bytes[i] === 255; ) {
+          const marker = bytes[i + 1], size = view.getUint16(i + 2);
+          if (marker === 218 || size < 2 || i + 2 + size > bytes.length)
+            break;
+          if (marker === 225 && size >= 8 && view.getUint32(i + 4) === 1165519206 && view.getUint16(i + 8) === 0) {
+            const gps = tiffGps(bytes.subarray(i + 10, i + 2 + size));
+            if (gps)
+              return gps;
+          }
+          i += 2 + size;
+        }
+      }
+      if (view.getUint32(0) === 2303741511) {
+        for (let i = 8;i + 12 <= bytes.length; ) {
+          const size = view.getUint32(i);
+          if (i + size + 12 > bytes.length)
+            break;
+          if (view.getUint32(i + 4) === 1700284774)
+            return tiffGps(bytes.subarray(i + 8, i + 8 + size));
+          i += size + 12;
+        }
+      }
+    } catch (error) {
+      if (!(error instanceof RangeError))
+        throw error;
+    }
+  }
+  function asDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader;
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("Could not read the selected file."));
+      reader.readAsDataURL(file);
+    });
+  }
+  async function readPhoto(file, dayId) {
+    const bytes = await file.arrayBuffer();
+    const header = new DataView(bytes);
+    if (bytes.byteLength < 8 || header.getUint16(0) !== 65496 && header.getUint32(0) !== 2303741511) {
+      throw new Error("Choose a JPEG or PNG photo.");
+    }
+    const type = header.getUint16(0) === 65496 ? "image/jpeg" : "image/png";
+    const image = new Image;
+    const source = URL.createObjectURL(new Blob([bytes], { type }));
+    try {
+      image.src = source;
+      await image.decode();
+      const scale = Math.min(1, 2048 / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const ctx = canvas.getContext("2d");
+      if (!ctx)
+        throw new Error("Could not prepare this photo.");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return {
+        id: crypto.randomUUID(),
+        name: file.name,
+        original: await asDataUrl(new Blob([bytes], { type })),
+        src: canvas.toDataURL("image/jpeg", 0.92),
+        dayId,
+        hero: false,
+        width: canvas.width,
+        height: canvas.height,
+        cropX: 0.5,
+        cropY: 0.5,
+        zoom: 1,
+        gps: photoGps(bytes)
+      };
+    } finally {
+      URL.revokeObjectURL(source);
+    }
+  }
+
+  // src/itinerary.ts
+  var palette = ["#aa4839", "#25678a", "#7760a2", "#167c79", "#a15513", "#8f4466", "#4e7040", "#4f5899"];
+  function newDay(project, rest = false) {
+    const unused = palette.find((color) => !project.days.some((day) => day.color === color));
+    return { id: crypto.randomUUID(), name: rest ? "Rest day" : "", color: unused || palette[project.days.length % palette.length], rest, ranges: [] };
+  }
+  function dayName(project, day) {
+    return "Day " + (project.days.indexOf(day) + 1) + (day.name ? " · " + day.name : "");
+  }
+  function firstTimestamp(track) {
+    let first = NaN, previous = -Infinity;
+    for (const segment of track)
+      for (const point of segment) {
+        const time = point.time;
+        if (!time || !/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/i.test(time))
+          return NaN;
+        const stamp = Date.parse(time);
+        if (!Number.isFinite(stamp) || stamp < previous)
+          return NaN;
+        if (!Number.isFinite(first))
+          first = stamp;
+        previous = stamp;
+      }
+    return first;
+  }
+  var startTimes = new WeakMap;
+  function reliableStart(track) {
+    if (!startTimes.has(track))
+      startTimes.set(track, firstTimestamp(track));
+    return startTimes.get(track);
+  }
+  function importRecording(project, xml, name, document2) {
+    const recording = { id: crypto.randomUUID(), name, xml, track: parseTrack(document2 ?? xml), included: true };
+    appendRecording(project, recording);
+    return recording;
+  }
+  function appendRecording(project, recording) {
+    const first = reliableStart(recording.track);
+    project.recordings.forEach((r, i) => {
+      r.importIndex ??= i;
+    });
+    recording.importIndex = project.recordings.length;
+    project.recordings.push(recording);
+    const chronological = project.recordings.every((r) => Number.isFinite(reliableStart(r.track)));
+    if (!project.manualOrder) {
+      project.recordings.sort((a, b) => chronological ? reliableStart(a.track) - reliableStart(b.track) : a.importIndex - b.importIndex);
+    }
+    const byDate = new Map;
+    function addRange(segment, start, end, date) {
+      let day = byDate.get(date);
+      if (!day && date && !project.manualOrder)
+        day = project.days.find((d) => d.date === date && !d.rest);
+      if (!day) {
+        day = newDay(project);
+        if (date)
+          day.date = date;
+        project.days.push(day);
+      }
+      byDate.set(date, day);
+      day.ranges.push({ recordingId: recording.id, segment, start, end });
+    }
+    recording.track.forEach((points, segment) => {
+      let start = 0;
+      let date = Number.isFinite(first) ? points[0].time.slice(0, 10) : "";
+      for (let i = 1;i < points.length; i++) {
+        const next = date ? points[i].time.slice(0, 10) : "";
+        if (next !== date) {
+          addRange(segment, start, i - 1, date);
+          start = i - 1;
+          date = next;
+        }
+      }
+      addRange(segment, start, points.length - 1, date);
+    });
+    orderRanges(project);
+    if (!project.manualOrder) {
+      if (chronological)
+        project.days.sort((a, b) => a.date.localeCompare(b.date));
+      else
+        orderTravelDays(project);
+    }
+  }
+  function orderRanges(project) {
+    const order = new Map(project.recordings.map((r, i) => [r.id, i]));
+    for (const day of project.days)
+      day.ranges.sort((a, b) => order.get(a.recordingId) - order.get(b.recordingId) || a.segment - b.segment || a.start - b.start);
+  }
+  function orderTravelDays(project) {
+    const order = new Map(project.recordings.map((r, i) => [r.id, i]));
+    const travel = project.days.filter((d) => !d.rest);
+    travel.sort((a, b) => order.get(a.ranges[0].recordingId) - order.get(b.ranges[0].recordingId));
+    let i = 0;
+    project.days = project.days.map((d) => d.rest ? d : travel[i++]);
+  }
+  function moveRecording(project, index, delta) {
+    const next = index + delta;
+    if (index < 0 || next < 0 || index >= project.recordings.length || next >= project.recordings.length)
+      return;
+    const [recording] = project.recordings.splice(index, 1);
+    project.recordings.splice(next, 0, recording);
+    orderRanges(project);
+    orderTravelDays(project);
+    project.manualOrder = true;
+  }
+  function dayTrack(project, day) {
+    const sources = new Map(project.recordings.map((r) => [r.id, r]));
+    return day.ranges.flatMap((r) => {
+      const src = sources.get(r.recordingId);
+      return src?.included ? [src.track[r.segment].slice(r.start, r.end + 1)] : [];
+    });
+  }
+  function insertRestDay(project, index, name = "Rest day") {
+    const day = newDay(project, true);
+    day.name = name.trim() || "Rest day";
+    project.days.splice(index, 0, day);
+    project.manualOrder = true;
+    return day;
+  }
+  function combinedRanges(days) {
+    const result = [];
+    for (const day of days)
+      for (const range of day.ranges) {
+        const last = result[result.length - 1];
+        if (last && last.recordingId === range.recordingId && last.segment === range.segment && last.end === range.start)
+          last.end = range.end;
+        else
+          result.push({ ...range });
+      }
+    return result;
+  }
+  function joinDays(project, left, right) {
+    if (left.rest || right.rest || project.days.indexOf(left) + 1 !== project.days.indexOf(right))
+      throw new Error("Select neighbouring travel days.");
+    left.ranges = combinedRanges([left, right]);
+    project.days.splice(project.days.indexOf(right), 1);
+    project.manualOrder = true;
+  }
+  function splitRanges(ranges, ref) {
+    const index = ranges.findIndex((r) => r.recordingId === ref.recordingId && r.segment === ref.segment && ref.point >= r.start && ref.point <= r.end);
+    if (index < 0)
+      throw new Error("Choose a point on the selected recording.");
+    const r = ranges[index], left = ranges.slice(0, index), right = ranges.slice(index + 1);
+    if (ref.point > r.start || r.start === r.end)
+      left.push({ ...r, end: ref.point });
+    if (ref.point < r.end)
+      right.unshift({ ...r, start: ref.point });
+    if (!left.length || !right.length)
+      throw new Error("Choose a boundary between the first and last points.");
+    return [left, right];
+  }
+  function setBoundary(project, left, existingRight, ref) {
+    const [before, after] = splitRanges(combinedRanges(existingRight ? [left, existingRight] : [left]), ref);
+    const right = existingRight || newDay(project);
+    if (!existingRight)
+      project.days.splice(project.days.indexOf(left) + 1, 0, right);
+    left.ranges = before;
+    right.ranges = after;
+    project.manualOrder = true;
+    return right;
+  }
+  var signatureCache = new WeakMap;
+  function signature(track) {
+    let signature = signatureCache.get(track);
+    if (!signature) {
+      signature = new Set;
+      for (const segment of track)
+        for (const p of segment)
+          signature.add(p.lat.toFixed(3) + "," + p.lon.toFixed(3));
+      signatureCache.set(track, signature);
+    }
+    return signature;
+  }
+  function possibleOverlap(a, b) {
+    const aCells = signature(a.track), bCells = signature(b.track);
+    const [smaller, larger] = aCells.size <= bCells.size ? [aCells, bCells] : [bCells, aCells];
+    let matched = 0;
+    for (const cell of smaller)
+      if (larger.has(cell))
+        matched++;
+    return smaller.size > 0 && matched / smaller.size >= 0.25;
+  }
+
+  // src/assets-ui.ts
+  function element(tag, text = "") {
+    const el = document.createElement(tag);
+    if (text)
+      el.textContent = text;
+    return el;
+  }
+  function button(text, click) {
+    const el = element("button", text);
+    el.type = "button";
+    el.onclick = click;
+    return el;
+  }
+  function label(text, control) {
+    const el = element("label");
+    el.append(element("span", text), control);
+    return el;
+  }
+  function input(value, type = "text") {
+    const el = element("input");
+    el.type = type;
+    el.value = value;
+    return el;
+  }
+  function option(name, value) {
+    const el = element("option", name);
+    el.value = value;
+    return el;
+  }
+  function select(options, value = "") {
+    const el = element("select");
+    for (const [id, name] of options)
+      el.add(option(name, id));
+    if (options.some(([id]) => id === value))
+      el.value = value;
+    return el;
+  }
+  var openBoxes = new WeakMap;
+  function details(text, project, key) {
+    const el = element("details");
+    el.append(element("summary", text));
+    const state = openBoxes.get(project) || new Set;
+    openBoxes.set(project, state);
+    el.open = state.has(key);
+    el.addEventListener("toggle", () => {
+      if (!el.isConnected)
+        return;
+      if (el.open)
+        state.add(key);
+      else
+        state.delete(key);
+    });
+    return el;
+  }
+  function pinMap(project, choose) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 360 220");
+    svg.setAttribute("aria-label", "Click the trip map to place a pin");
+    svg.style.cssText = "cursor:crosshair;background:#e1e8dc;width:100%;height:auto;box-shadow:none";
+    const segments = project.recordings.filter((r) => r.included).flatMap((r) => r.track);
+    const anchor = segments[0]?.[0]?.lon ?? project.places[0]?.lon ?? 0;
+    const relative = (lon) => (lon - anchor + 540) % 360 - 180;
+    let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+    function include(p) {
+      const lon = relative(p.lon);
+      minLat = Math.min(minLat, p.lat);
+      maxLat = Math.max(maxLat, p.lat);
+      minLon = Math.min(minLon, lon);
+      maxLon = Math.max(maxLon, lon);
+    }
+    for (const segment of segments)
+      for (const p of segment)
+        include(p);
+    project.places.forEach(include);
+    if (!Number.isFinite(minLat)) {
+      minLat = -90;
+      maxLat = 90;
+      minLon = -180;
+      maxLon = 180;
+    }
+    const midLat = (maxLat + minLat) / 2, midLon = (maxLon + minLon) / 2;
+    const longitudeScale = Math.max(0.01, Math.cos(midLat * Math.PI / 180));
+    const scale = Math.min(320 / Math.max(0.005, (maxLon - minLon) * longitudeScale), 180 / Math.max(0.005, maxLat - minLat));
+    const x = (p) => 180 + (relative(p.lon) - midLon) * scale * longitudeScale;
+    const y = (p) => 110 - (p.lat - midLat) * scale;
+    for (const segment of segments) {
+      const path = document.createElementNS(ns, "path");
+      path.setAttribute("d", segment.map((p, i) => (i ? "L" : "M") + x(p).toFixed(2) + " " + y(p).toFixed(2)).join(" "));
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", "#366657");
+      path.setAttribute("stroke-width", "1.6");
+      svg.append(path);
+    }
+    for (const p of project.places) {
+      const dot = document.createElementNS(ns, "circle");
+      dot.setAttribute("cx", String(x(p)));
+      dot.setAttribute("cy", String(y(p)));
+      dot.setAttribute("r", "3");
+      dot.setAttribute("fill", "#ad4725");
+      const title = document.createElementNS(ns, "title");
+      title.textContent = p.name;
+      dot.append(title);
+      svg.append(dot);
+    }
+    svg.onclick = (event) => {
+      const transform = svg.getScreenCTM();
+      if (!transform)
+        return;
+      const pixel = new DOMPoint(event.clientX, event.clientY).matrixTransform(transform.inverse());
+      choose({ lat: Math.max(-90, Math.min(90, midLat - (pixel.y - 110) / scale)), lon: (anchor + midLon + (pixel.x - 180) / (scale * longitudeScale) + 540) % 360 - 180 });
+    };
+    return svg;
+  }
+  function visitCandidates(project, day, place) {
+    const options = [];
+    const records = new Map(project.recordings.filter((r) => r.included).map((r) => [r.id, r]));
+    const target = { lat: place.lat, lon: place.lon, ele: null };
+    for (const range of day.ranges) {
+      const line = records.get(range.recordingId)?.track[range.segment];
+      if (!line)
+        continue;
+      let previous = Infinity;
+      let current = distance(target, line[range.start]);
+      for (let i = range.start;i <= range.end; i++) {
+        const next = i < range.end ? distance(target, line[i + 1]) : Infinity;
+        if (current < previous && current <= next)
+          options.push({ km: current, position: { recordingId: range.recordingId, segment: range.segment, point: i } });
+        previous = current;
+        current = next;
+      }
+    }
+    const closest = options.reduce((min, o) => Math.min(min, o.km), Infinity);
+    return options.filter((o) => o.km <= closest + 0.5);
+  }
+  function mountAssets(host, project, onChange) {
+    host.replaceChildren();
+    const placesPanel = element("section"), photosPanel = element("section");
+    host.append(placesPanel, photosPanel);
+    const dayOptions = () => project.days.map((d) => [d.id, dayName(project, d)]);
+    const rerender = () => {
+      onChange();
+      if (host.contains(placesPanel))
+        mountAssets(host, project, onChange);
+    };
+    placesPanel.append(element("h3", "Places & visits"));
+    const name = input(""), location = input(""), notice = element("p");
+    location.placeholder = "Latitude, longitude or map link";
+    notice.setAttribute("role", "status");
+    const mapBox = details("Drop a pin on the map", project, "map");
+    mapBox.ontoggle = () => {
+      if (!mapBox.open || mapBox.querySelector("svg"))
+        return;
+      mapBox.append(pinMap(project, (coords) => {
+        location.value = coords.lat.toFixed(7) + ", " + coords.lon.toFixed(7);
+        notice.textContent = "Pin positioned. Choose Add place to save.";
+      }));
+    };
+    placesPanel.append(label("Place name", name), label("Location", location), mapBox, button("Add place", () => {
+      const coords = readCoordinates(location.value);
+      if (!coords) {
+        mapBox.open = true;
+        notice.textContent = "Paste a coordinate pair or click the map to position this place.";
+        return;
+      }
+      addPlace(project, name.value, coords);
+      rerender();
+    }), notice);
+    for (const place of project.places) {
+      const box = details(place.name, project, place.id);
+      const visible = input("", "checkbox");
+      visible.checked = place.visible;
+      visible.onchange = () => {
+        place.visible = visible.checked;
+        rerender();
+      };
+      const placeName = input(place.name);
+      placeName.onchange = () => {
+        place.name = placeName.value.trim() || place.name;
+        rerender();
+      };
+      const category = input(place.category);
+      category.onchange = () => {
+        place.category = category.value.trim() || "Place";
+        rerender();
+      };
+      box.append(label("Show on posters and in waypoint export", visible), label("Name", placeName), label("Category", category), element("small", place.lat.toFixed(5) + ", " + place.lon.toFixed(5)));
+      for (const visit of project.visits.filter((v) => v.placeId === place.id)) {
+        const day = project.days.find((d) => d.id === visit.dayId);
+        const row = element("div");
+        row.append(element("span", (day ? dayName(project, day) : "Unassigned day") + (visit.overnight ? " · Overnight" : " · Visit") + (visit.position ? " · Point " + (visit.position.point + 1) : "")), button("Remove visit", () => {
+          project.visits = project.visits.filter((v) => v.id !== visit.id);
+          rerender();
+        }));
+        box.append(row);
+      }
+      if (project.days.length) {
+        let options = function() {
+          const selected = project.days.find((d) => d.id === day.value);
+          const ranges = selected.ranges.filter((r) => project.recordings.some((rec) => rec.id === r.recordingId && rec.included));
+          const end = ranges.at(-1);
+          refs = [];
+          position.replaceChildren(option("Day only", ""));
+          if (end) {
+            refs.push({ recordingId: end.recordingId, segment: end.segment, point: end.end });
+            position.add(option("End of day · point " + (end.end + 1), "0"));
+          }
+          for (const pass of visitCandidates(project, selected, place)) {
+            refs.push(pass.position);
+            const record = project.recordings.find((r) => r.id === pass.position.recordingId);
+            position.add(option(record.name + " · segment " + (pass.position.segment + 1) + " · point " + (pass.position.point + 1) + " · " + pass.km.toFixed(1) + " km away", String(refs.length - 1)));
+          }
+          if (overnight.checked && end)
+            position.value = "0";
         };
-        let run = [];
-        for (const p of line) {
-          if (p.ele === null) {
-            finish();
+        const day = select(dayOptions()), overnight = input("", "checkbox"), position = element("select");
+        let refs = [];
+        box.ontoggle = () => {
+          if (box.open)
+            options();
+        };
+        day.onchange = options;
+        overnight.onchange = () => {
+          if (overnight.checked && refs.length)
+            position.value = "0";
+        };
+        box.append(label("Visit day", day), label("Trip position", position), label("Overnight stay", overnight), button("Add visit", () => {
+          project.visits.push({
+            id: crypto.randomUUID(),
+            placeId: place.id,
+            dayId: day.value,
+            overnight: overnight.checked,
+            position: position.value ? refs[Number(position.value)] : undefined
+          });
+          rerender();
+        }));
+      }
+      box.append(button("Remove place", () => {
+        project.places = project.places.filter((p) => p.id !== place.id);
+        project.visits = project.visits.filter((v) => v.placeId !== place.id);
+        for (const photo of project.photos)
+          if (photo.placeId === place.id)
+            delete photo.placeId;
+        rerender();
+      }));
+      placesPanel.append(box);
+    }
+    const saveGpx = button("Download GPX with selected places", () => {
+      const url = URL.createObjectURL(new Blob([exportGpx(project.places, project.recordings)], { type: "application/gpx+xml" }));
+      const a = element("a");
+      a.href = url;
+      a.download = "trip-with-places.gpx";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    });
+    saveGpx.disabled = !project.places.some((p) => p.visible);
+    placesPanel.append(saveGpx);
+    photosPanel.append(element("h3", "Photos"));
+    const photoDays = [["", "Full trip"], ...dayOptions()];
+    const assignment = select(photoDays), files = input("", "file"), photoStatus = element("p");
+    photoStatus.setAttribute("role", "status");
+    files.multiple = true;
+    files.accept = "image/jpeg,image/png,.jpg,.jpeg,.png";
+    files.onchange = async () => {
+      const batch = Array.from(files.files || []);
+      if (!batch.length)
+        return;
+      const dayId = assignment.value;
+      files.disabled = true;
+      const loaded = [], errors = [];
+      for (const [i, file] of batch.entries()) {
+        photoStatus.textContent = "Preparing photo " + (i + 1) + " of " + batch.length + "…";
+        try {
+          loaded.push(await readPhoto(file, dayId));
+        } catch {
+          errors.push(file.name);
+        }
+      }
+      project.photos.push(...loaded);
+      files.disabled = false;
+      files.value = "";
+      if (loaded.length)
+        rerender();
+      const status = host.querySelector("[data-photo-status]") || photoStatus;
+      status.textContent = errors.length ? "Could not read " + errors.join(", ") + ". Choose JPEG or PNG files." : loaded.length + " photos added.";
+    };
+    photoStatus.dataset.photoStatus = "";
+    photosPanel.append(label("Add photos to", assignment), label("Choose photos", files), photoStatus);
+    for (const [i, photo] of project.photos.entries()) {
+      let cropControl = function(title, key, min, max) {
+        const slider = input(String(photo[key]), "range");
+        slider.min = String(min);
+        slider.max = String(max);
+        slider.step = "0.01";
+        slider.value = String(photo[key]);
+        slider.onchange = () => {
+          photo[key] = Number(slider.value);
+          rerender();
+        };
+        return label(title, slider);
+      }, move = function(delta) {
+        const next = i + delta;
+        const swap = button(delta < 0 ? "Move photo earlier" : "Move photo later", () => {
+          const [entry] = project.photos.splice(i, 1);
+          project.photos.splice(next, 0, entry);
+          rerender();
+        });
+        swap.disabled = next < 0 || next >= project.photos.length;
+        return swap;
+      };
+      const box = details(photo.name, project, photo.id), thumb = element("img");
+      thumb.src = photo.src;
+      thumb.alt = photo.name;
+      thumb.loading = "lazy";
+      thumb.width = 120;
+      const day = select(photoDays, photo.dayId);
+      day.onchange = () => {
+        photo.dayId = day.value;
+        photo.hero = false;
+        rerender();
+      };
+      const hero = input("", "checkbox");
+      hero.checked = photo.hero;
+      hero.onchange = () => {
+        if (hero.checked) {
+          for (const sibling of project.photos)
+            if (sibling.dayId === photo.dayId)
+              sibling.hero = false;
+        }
+        photo.hero = hero.checked;
+        rerender();
+      };
+      box.append(thumb, label("Assigned to", day), label("Use as lead photo", hero));
+      box.append(cropControl("Horizontal crop", "cropX", 0, 1), cropControl("Vertical crop", "cropY", 0, 1), cropControl("Crop zoom", "zoom", 1, 3));
+      box.append(move(-1), move(1));
+      if (photo.gps && !photo.placeId)
+        box.append(button("Add place from photo GPS", () => {
+          const place = addPlace(project, photo.name.replace(/\.[^.]+$/, ""), photo.gps);
+          photo.placeId = place.id;
+          if (photo.dayId)
+            project.visits.push({ id: crypto.randomUUID(), placeId: place.id, dayId: photo.dayId, overnight: false });
+          rerender();
+        }));
+      box.append(button("Remove photo", () => {
+        project.photos.splice(i, 1);
+        rerender();
+      }));
+      photosPanel.append(box);
+    }
+  }
+
+  // src/itinerary-ui.ts
+  function element2(tag, text = "") {
+    const node = document.createElement(tag);
+    node.textContent = text;
+    return node;
+  }
+  function button2(label, action, disabled = false) {
+    const node = element2("button", label);
+    node.type = "button";
+    node.disabled = disabled;
+    node.onclick = action;
+    return node;
+  }
+  function option2(label, value) {
+    const choice = element2("option", label);
+    choice.value = value;
+    return choice;
+  }
+  function labeled(name, field) {
+    const label = element2("label", name + " ");
+    label.append(field);
+    return label;
+  }
+  function svgNode(tag, attrs) {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [key, value] of Object.entries(attrs))
+      node.setAttribute(key, value);
+    return node;
+  }
+  function boundaryEditor(project, left, right, commit) {
+    const panel = element2("fieldset");
+    panel.append(element2("legend", right ? "Adjust day boundary" : "Split this day"));
+    const ranges = combinedRanges(right ? [left, right] : [left]);
+    const sources = new Map(project.recordings.map((r) => [r.id, r]));
+    const samples = [];
+    const segments = [];
+    const visible = ranges.filter((r) => sources.get(r.recordingId)?.included);
+    for (const r of visible)
+      segments.push(sources.get(r.recordingId).track[r.segment].slice(r.start, r.end + 1));
+    if (!segments.length) {
+      panel.append("Include a recording to edit this day.");
+      return panel;
+    }
+    const bounds = layout(segments);
+    const scale = Math.min(372 / (bounds.east - bounds.west || 0.00000001), 172 / (bounds.north - bounds.south || 0.00000001));
+    const projectAxis = (x, center, offset) => offset + (x - center) * scale;
+    bounds.lines.forEach((line, run) => {
+      const r = visible[run];
+      line.forEach((p, i) => samples.push({
+        recordingId: r.recordingId,
+        segment: r.segment,
+        point: r.start + i,
+        run,
+        km: p.km,
+        ele: p.ele,
+        x: projectAxis(p.x, (bounds.east + bounds.west) / 2, 200),
+        y: projectAxis(-p.y, -(bounds.north + bounds.south) / 2, 100)
+      }));
+    });
+    if (samples.length < 3) {
+      panel.append("A day needs at least one point on each side of a split.");
+      return panel;
+    }
+    const map = svgNode("svg", { viewBox: "0 0 400 200", "aria-label": "Choose a boundary on the recorded route" });
+    const profile = svgNode("svg", { viewBox: "0 0 400 80", "aria-label": "Choose a boundary on the elevation profile" });
+    map.style.cssText = profile.style.cssText = "width:100%;height:auto;cursor:crosshair;background:#f2f2e8;display:block";
+    const slider = element2("input");
+    slider.type = "range";
+    slider.min = "1";
+    slider.max = String(samples.length - 2);
+    slider.step = "1";
+    const endpoint = left.ranges.at(-1);
+    let split = right && endpoint ? samples.findIndex((p) => p.recordingId === endpoint.recordingId && p.segment === endpoint.segment && p.point === endpoint.end) : -1;
+    if (split < 1 || split >= samples.length - 1)
+      split = Math.floor(samples.length / 2);
+    const summary = element2("output");
+    const passes = element2("select");
+    const passLabel = labeled("Matching visits", passes);
+    passLabel.hidden = true;
+    const beforeColor = left.color, afterColor = right?.color || "#777464";
+    const xy = (q) => q.x.toFixed(1) + "," + q.y.toFixed(1);
+    const elevation = (q) => (10 + 380 * q.km / (bounds.km || 1)).toFixed(1) + "," + (70 - 60 * (q.ele - bounds.low) / (bounds.peak - bounds.low || 1)).toFixed(1);
+    function draw() {
+      slider.value = String(split);
+      const chosen = samples[split];
+      summary.textContent = chosen.km.toFixed(1) + " km before boundary · " + (bounds.km - chosen.km).toFixed(1) + " km after";
+      map.replaceChildren();
+      profile.replaceChildren();
+      let mapPath = "", profilePath = "", previousColor = "", previousRun = -1, previousElevation = false;
+      function flush() {
+        const attrs = { fill: "none", stroke: previousColor, "stroke-width": "3", "stroke-linejoin": "round", "stroke-linecap": "round" };
+        if (mapPath)
+          map.prepend(svgNode("path", { ...attrs, d: mapPath }));
+        if (profilePath)
+          profile.append(svgNode("path", { ...attrs, d: profilePath }));
+      }
+      for (let i = 0;i < samples.length; i++) {
+        const p = samples[i], color = i <= split ? beforeColor : afterColor;
+        if (p.run !== previousRun || color !== previousColor) {
+          flush();
+          const prev = i > 0 && samples[i - 1].run === p.run ? samples[i - 1] : null;
+          mapPath = prev ? "M" + xy(prev) : "";
+          profilePath = prev && prev.ele !== null ? "M" + elevation(prev) : "";
+          previousElevation = Boolean(profilePath);
+        }
+        mapPath += (mapPath ? "L" : "M") + xy(p);
+        if (p.ele !== null)
+          profilePath += (previousElevation ? "L" : "M") + elevation(p);
+        previousElevation = p.ele !== null;
+        previousRun = p.run;
+        previousColor = color;
+      }
+      flush();
+      map.append(svgNode("circle", { cx: String(chosen.x), cy: String(chosen.y), r: "5", fill: "#fff", stroke: "#212d24", "stroke-width": "2" }));
+      const profileX = String(10 + 380 * chosen.km / (bounds.km || 1));
+      profile.append(svgNode("line", { x1: profileX, x2: profileX, y1: "4", y2: "76", stroke: "#212d24", "stroke-dasharray": "3 2" }));
+    }
+    function change(value) {
+      split = Math.max(1, Math.min(samples.length - 2, value));
+      draw();
+    }
+    slider.oninput = () => {
+      passLabel.hidden = true;
+      change(Number(slider.value));
+    };
+    const pointer = (ev, svg, height) => {
+      const rect = svg.getBoundingClientRect();
+      return { x: (ev.clientX - rect.left) / rect.width * 400, y: (ev.clientY - rect.top) / rect.height * height };
+    };
+    map.onclick = (ev) => {
+      const location = pointer(ev, map, 200);
+      const ds = samples.map((p) => Math.hypot(p.x - location.x, p.y - location.y));
+      let best = Infinity;
+      for (let i = 1;i < ds.length - 1; i++)
+        best = Math.min(best, ds[i]);
+      const candidates = [];
+      for (let i = 1;i < ds.length - 1; i++) {
+        if (ds[i] > best + 3)
+          continue;
+        const first = i;
+        while (i + 1 < ds.length - 1 && samples[i + 1].run === samples[first].run && Math.abs(ds[i + 1] - ds[first]) < 0.000001)
+          i++;
+        const before = first === 1 || samples[first - 1].run !== samples[first].run ? Infinity : ds[first - 1];
+        const after = i === ds.length - 2 || samples[i + 1].run !== samples[first].run ? Infinity : ds[i + 1];
+        if (ds[first] <= before && ds[first] <= after)
+          candidates.push(first);
+      }
+      if (!candidates.length)
+        return;
+      passes.replaceChildren(...candidates.map((i, n) => option2("Pass " + (n + 1) + " · " + samples[i].km.toFixed(1) + " km · " + sources.get(samples[i].recordingId).name, String(i))));
+      passLabel.hidden = candidates.length < 2;
+      change(candidates[0]);
+    };
+    passes.onchange = () => change(Number(passes.value));
+    const pickOnProfile = (ev) => {
+      const km = (pointer(ev, profile, 80).x - 10) / 380 * bounds.km;
+      let closest = 1;
+      for (let i = 2;i < samples.length - 1; i++)
+        if (Math.abs(samples[i].km - km) < Math.abs(samples[closest].km - km))
+          closest = i;
+      passLabel.hidden = true;
+      change(closest);
+    };
+    profile.onclick = pickOnProfile;
+    profile.style.touchAction = "none";
+    profile.onpointerdown = (ev) => {
+      profile.setPointerCapture(ev.pointerId);
+      pickOnProfile(ev);
+    };
+    profile.onpointermove = (ev) => {
+      if (profile.hasPointerCapture(ev.pointerId))
+        pickOnProfile(ev);
+    };
+    profile.onpointerup = (ev) => {
+      if (profile.hasPointerCapture(ev.pointerId))
+        profile.releasePointerCapture(ev.pointerId);
+    };
+    const apply = button2(right ? "Apply boundary" : "Create next day", () => {
+      try {
+        setBoundary(project, left, right, samples[split]);
+        commit();
+      } catch (e) {
+        summary.textContent = e.message;
+      }
+    });
+    panel.append(map);
+    if (Number.isFinite(bounds.peak))
+      panel.append(profile);
+    panel.append(labeled("Boundary point", slider), passLabel, summary, apply);
+    draw();
+    return panel;
+  }
+  function mountItinerary(host, project, onChange, onMerge) {
+    host.replaceChildren();
+    function commit() {
+      mountItinerary(host, project, onChange, onMerge);
+      onChange();
+    }
+    if (!project.recordings.length && !project.days.length) {
+      host.append(button2("Add a rest day", () => {
+        insertRestDay(project, 0);
+        commit();
+      }));
+      return;
+    }
+    if (project.recordings.length)
+      host.append(element2("h3", "Recordings"));
+    project.recordings.forEach((rec, i) => {
+      const row = element2("div");
+      row.className = "recording-row";
+      const checkbox = element2("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = rec.included;
+      checkbox.onchange = () => {
+        rec.included = checkbox.checked;
+        commit();
+      };
+      const label = element2("label");
+      label.append(checkbox, " " + rec.name);
+      const up = button2("↑", () => {
+        moveRecording(project, i, -1);
+        commit();
+      }, i === 0);
+      const down = button2("↓", () => {
+        moveRecording(project, i, 1);
+        commit();
+      }, i === project.recordings.length - 1);
+      up.setAttribute("aria-label", "Move " + rec.name + " earlier");
+      down.setAttribute("aria-label", "Move " + rec.name + " later");
+      row.append(label, up, down);
+      const start = rec.track[0]?.[0]?.time;
+      if (start)
+        row.append(element2("small", start));
+      const overlaps = project.recordings.slice(0, i).filter((other) => possibleOverlap(rec, other));
+      if (overlaps.length)
+        row.append(element2("small", "Possible overlap with " + overlaps.map((r) => r.name).join(", ")));
+      host.append(row);
+    });
+    host.append(element2("h3", "Itinerary"));
+    const selector = element2("select");
+    project.days.forEach((day) => selector.add(option2(dayName(project, day) + (day.date ? " · " + day.date : ""), day.id)));
+    const previous = host.dataset.day;
+    if (previous && project.days.some((d) => d.id === previous))
+      selector.value = previous;
+    const detail = element2("div");
+    host.append(labeled("Edit day", selector), detail);
+    function show() {
+      detail.replaceChildren();
+      const index = project.days.findIndex((d) => d.id === selector.value), day = project.days[index];
+      if (!day)
+        return;
+      host.dataset.day = day.id;
+      const name = element2("input");
+      name.type = "text";
+      name.value = day.name;
+      name.maxLength = 80;
+      name.onchange = () => {
+        day.name = name.value.trim();
+        commit();
+      };
+      const color = element2("input");
+      color.type = "color";
+      color.value = day.color;
+      color.onchange = () => {
+        day.color = color.value;
+        commit();
+      };
+      detail.append(labeled("Day name", name), labeled("Day colour", color));
+      const addRest = (offset) => {
+        const rest = insertRestDay(project, index + offset);
+        host.dataset.day = rest.id;
+        commit();
+      };
+      detail.append(button2("Rest day before", () => addRest(0)), button2("Rest day after", () => addRest(1)));
+      if (day.rest)
+        return;
+      const track = dayTrack(project, day);
+      if (track.length)
+        detail.append(element2("p", layout(track).km.toFixed(1) + " km"));
+      const mode = element2("select");
+      mode.add(option2("Split this day", "split"));
+      const nextIndex = project.days.findIndex((d, i) => i > index && !d.rest);
+      const next = project.days[nextIndex];
+      if (next)
+        mode.add(option2("Adjust boundary with " + dayName(project, next), "adjust"));
+      const editor = element2("div");
+      function edit() {
+        editor.replaceChildren(boundaryEditor(project, day, mode.value === "adjust" ? next : null, commit));
+      }
+      mode.onchange = edit;
+      detail.append(labeled("Day boundaries", mode), editor);
+      if (nextIndex === index + 1)
+        detail.append(button2("Group with next day", () => {
+          joinDays(project, day, next);
+          onMerge?.(next.id, day.id);
+          commit();
+        }));
+      edit();
+    }
+    selector.onchange = show;
+    show();
+  }
+
+  // src/poster.ts
+  var escapeText = (value) => value.replace(/[<>&"']/g, (c) => "&#" + c.charCodeAt(0) + ";");
+  var f = (value) => value.toFixed(1);
+  var ink = "#163b32";
+  var paper = "#f8f5e9";
+  function availablePosters(project) {
+    const included = new Set(project.recordings.filter((r) => r.included).map((r) => r.id));
+    const days = project.days.filter((d) => d.rest || d.ranges.some((r) => included.has(r.recordingId)) || project.photos.some((photo) => photo.dayId === d.id) || project.visits.some((v) => v.dayId === d.id));
+    const result = [{ key: "trip", name: "Full trip", days }];
+    for (const day of days)
+      result.push({ key: "day:" + day.id, name: dayName(project, day), days: [day] });
+    for (const group of project.output.groups) {
+      const members = days.filter((day) => group.dayIds.includes(day.id));
+      if (members.length)
+        result.push({ key: "group:" + group.id, name: group.name, days: members });
+    }
+    return result;
+  }
+  function posterPlaces(project, target) {
+    const visited = new Set(project.visits.filter((v) => target.days.some((d) => d.id === v.dayId)).map((v) => v.placeId));
+    return project.places.filter((p) => target.key === "trip" || visited.has(p.id));
+  }
+  function placeText(project, key, place) {
+    const mode = project.output.placeText?.[key]?.[place.id];
+    if (mode === "pin")
+      return "";
+    if (mode === "category")
+      return place.category;
+    if (mode === "both" && place.category)
+      return place.name + " · " + place.category;
+    return place.name;
+  }
+  function line(text, x, y, size, width, extra = "") {
+    const fit = Array.from(text).reduce((sum, c) => sum + (/[il .,]/.test(c) ? 0.3 : /[MW]/.test(c) ? 0.95 : c.charCodeAt(0) > 255 ? 1 : 0.64), 0) * size;
+    return '<text x="' + f(x) + '" y="' + f(y) + '" font-size="' + size + '" ' + (fit > width ? 'textLength="' + width + '" lengthAdjust="spacingAndGlyphs" ' : "") + extra + ">" + escapeText(text) + "</text>";
+  }
+  function picture(photo, x, y, width, height) {
+    const scale = Math.max(width / photo.width, height / photo.height) * photo.zoom;
+    const w = photo.width * scale, h = photo.height * scale;
+    return '<svg x="' + x + '" y="' + y + '" width="' + width + '" height="' + height + '" overflow="hidden"><image x="' + f((width - w) * photo.cropX) + '" y="' + f((height - h) * photo.cropY) + '" width="' + f(w) + '" height="' + f(h) + '" href="' + escapeText(photo.src) + '"/></svg>';
+  }
+  function shade(hex, level) {
+    const factor = 1.23 - level * 0.45;
+    const rgb = [1, 3, 5].map((pos) => Math.min(255, Math.round(parseInt(hex.slice(pos, pos + 2), 16) * factor)));
+    return "rgb(" + rgb.join(",") + ")";
+  }
+  function routeMap(project, target, tracks, places, top, height) {
+    const segments = tracks.flat();
+    const all = segments.concat(places.map((p) => [{ lat: p.lat, lon: p.lon, ele: null }]));
+    if (!all.length)
+      return "";
+    const { lines, west, east, north, south } = layout(all);
+    let peak = -Infinity, low = Infinity;
+    for (const recording of project.recordings) {
+      if (!recording.included)
+        continue;
+      for (const segment of recording.track)
+        for (const point of segment) {
+          if (point.ele !== null) {
+            peak = Math.max(peak, point.ele);
+            low = Math.min(low, point.ele);
+          }
+        }
+    }
+    const scale = Math.min(870 / (east - west || 0.000000001), (height - 92) / (north - south || 0.000000001));
+    const xy = (p) => ({ x: 540 + (p.x - (east + west) / 2) * scale, y: top + height / 2 - (p.y - (south + north) / 2) * scale });
+    let start = 0;
+    const routes = tracks.map((track, i) => {
+      const day = target.days[i], pieces = [];
+      for (const _segment of track) {
+        const pts = lines[start++];
+        let coords = "", lastShade = "";
+        const finish = () => {
+          if (coords)
+            pieces.push('<path d="' + coords + '" stroke="' + lastShade + '"/>');
+        };
+        for (let j = 0;j < pts.length; j++) {
+          const p = pts[j], pos = xy(p), end = f(pos.x) + "," + f(pos.y);
+          if (pts.length === 1) {
+            pieces.push('<circle cx="' + pos.x + '" cy="' + pos.y + '" r="4" fill="' + day.color + '"/>');
+            break;
+          }
+          if (!j) {
+            coords = "M" + end;
             continue;
           }
-          run.push(fmt(64 + 952 * p.km / (km || 1)) + "," + fmt(1138 - 84 * (p.ele - low) / (peak - low || 1)));
+          const bucket = p.ele === null || peak === low ? 0.5 : Math.round(5 * (p.ele - low) / (peak - low)) / 5;
+          const color = shade(day.color, bucket);
+          if (lastShade && lastShade !== color) {
+            finish();
+            const prev = xy(pts[j - 1]);
+            coords = "M" + f(prev.x) + "," + f(prev.y);
+          }
+          lastShade = color;
+          coords += " L" + end;
         }
         finish();
       }
+      return '<g data-route="' + escapeText(day.id) + '">' + pieces.join("") + "</g>";
+    });
+    let pins = "";
+    const labelLocations = [];
+    for (const [index, p] of places.entries()) {
+      const point = xy(lines[segments.length + index][0]);
+      const name = placeText(project, target.key, p);
+      const width = Math.min(540, Math.max(55, name.length * 17));
+      const override = project.output.labels[target.key]?.[p.id];
+      const x = Math.max(40, Math.min(1040 - width, override?.x ?? point.x + 13));
+      let y = Math.max(top + 32, Math.min(top + height - 8, override?.y ?? point.y - 11));
+      if (!override) {
+        const margin = 32;
+        const origin = y;
+        for (let i = 0;i < Math.floor(height / margin); i++) {
+          const candidate = origin + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * margin;
+          if (candidate < top + 32 || candidate > top + height - 8)
+            continue;
+          if (!labelLocations.some((l) => Math.abs(l.y - candidate) < margin && x < l.x + l.width && x + width > l.x)) {
+            y = candidate;
+            break;
+          }
+        }
+      }
+      if (name)
+        labelLocations.push({ x, y, width });
+      const overnight = project.visits.some((v) => v.placeId === p.id && v.overnight && target.days.some((d) => d.id === v.dayId));
+      if (name)
+        pins += '<path stroke="#5d6b60" fill="none" d="M' + f(point.x) + "," + f(point.y) + " L" + f(x) + "," + f(y - 8) + '"/>';
+      pins += '<circle cx="' + f(point.x) + '" cy="' + f(point.y) + '" r="7" fill="' + ink + '" stroke="' + paper + '" stroke-width="3"/>';
+      if (name)
+        pins += line(name, x, y, 27, width, 'data-label="' + escapeText(p.id) + '" font-weight="' + (overnight ? "700" : "400") + '" stroke="' + paper + '" stroke-width="7" paint-order="stroke"');
     }
-    const name = title.trim() || "Untitled trip";
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" role="img" aria-label="Trip poster" font-family="Helvetica, Arial, sans-serif" fill="#163e38">
-    <defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0V60" fill="none" stroke="#c6cdbd" stroke-width="1"/></pattern></defs>
-    <rect width="1080" height="1350" fill="#f4f1e6"/>
-    <text x="60" y="115" font-weight="700" font-size="${Math.min(76, 1460 / Math.max(1, name.length))}">${escape(name)}</text>
-    <rect x="40" y="155" width="1000" height="${height + 70}" fill="url(#grid)"/>
-    <g stroke="#126c5f" fill="#126c5f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">${paths}</g>
-    ${hasProfile ? label(64, 1025, 30, "Elevation") + '<g fill="none" stroke="#126c5f" stroke-width="5" stroke-linecap="round">' + profile + "</g>" : ""}
-    <rect y="1180" width="1080" height="170" fill="#163e38"/>
-    <g fill="#faf6e8">${label(64, 1235, 30, "Recorded distance")}${label(64, 1310, 62, fmt(km) + " km")}${hasProfile ? label(590, 1235, 30, "Highest recorded") + label(590, 1310, 62, Math.round(peak) + " m") : ""}</g></svg>`;
+    return '<rect x="26" y="' + top + '" width="1028" height="' + height + '" rx="9" fill="#e7ebdd"/><g fill="none" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">' + routes.reverse().join("") + "</g>" + pins;
+  }
+  function elevation(stats, top, color) {
+    let paths = "";
+    for (const segment of stats.lines) {
+      let active = false;
+      for (const p of segment) {
+        if (p.ele === null) {
+          active = false;
+          continue;
+        }
+        const x = 45 + 990 * p.km / (stats.km || 1);
+        const y = top + 96 - (p.ele - stats.low) / (stats.peak - stats.low || 1) * 70;
+        paths += (active ? " L" : " M") + f(x) + "," + f(y) + (active ? "" : " l0.1,0");
+        active = true;
+      }
+    }
+    return line("Elevation", 45, top + 25, 25, 300) + '<path d="' + paths + '" fill="none" stroke="' + color + '" stroke-width="4" stroke-linecap="round"/>';
+  }
+  function renderPoster(project, key = "trip") {
+    const target = availablePosters(project).find((t) => t.key === key);
+    if (!target)
+      throw Error("This poster is unavailable.");
+    const { output } = project;
+    const tracks = target.days.map((day) => dayTrack(project, day)), combined = tracks.flat();
+    const stats = combined.length ? layout(combined) : null;
+    const places = posterPlaces(project, target).filter((p) => output.placeVisibility?.[key]?.[p.id] ?? p.visible);
+    const photos = project.photos.filter((p) => key === "trip" ? !p.dayId : target.days.some((d) => d.id === p.dayId));
+    const hero = photos.find((p) => p.hero && (key !== "trip" || !p.dayId)) || photos.find((p) => p.hero) || photos[0];
+    const gallery = photos.filter((p) => p !== hero);
+    const title = output.title.trim() || "Untitled trip";
+    let body = "", y = 0;
+    if (hero) {
+      const height = combined.length ? 360 : 640;
+      body += picture(hero, 0, 0, 1080, height) + '<rect width="1080" height="' + height + '" fill="url(#scrim)"/>';
+      body += line(title, 48, height - (key === "trip" ? 45 : 90), 68, 984, 'fill="white" font-family="Georgia,serif" font-weight="bold"');
+      if (key !== "trip")
+        body += line(target.name, 48, height - 38, 38, 984, 'fill="white"');
+      y = height + 22;
+    } else {
+      body += line(title, 48, 94, 68, 984, 'font-family="Georgia,serif" font-weight="bold"');
+      if (key !== "trip")
+        body += line(target.name, 48, 150, 38, 984);
+      y = key === "trip" ? 130 : 176;
+    }
+    if (stats) {
+      const height = hero ? 480 : 670;
+      body += routeMap(project, target, tracks, places, y, height);
+      y += height + 18;
+      if (output.showProfile && Number.isFinite(stats.peak)) {
+        body += elevation(stats, y, output.accent);
+        y += 110;
+      }
+      const metrics = [];
+      if (output.showDistance)
+        metrics.push(f(stats.km) + " km");
+      if (output.showPeak && Number.isFinite(stats.peak))
+        metrics.push("Highest recorded · " + Math.round(stats.peak) + " m");
+      if (metrics.length) {
+        body += line(metrics.join("     /     "), 48, y + 48, 39, 984, 'font-weight="bold" fill="' + output.accent + '"');
+        y += 77;
+      }
+    }
+    if (gallery.length) {
+      const columns = gallery.length === 1 ? 1 : Math.min(gallery.length, 3), w = (984 - (columns - 1) * 12) / columns;
+      for (const [i, photo] of gallery.entries()) {
+        body += picture(photo, 48 + i % columns * (w + 12), y + Math.floor(i / columns) * 208, w, 196);
+      }
+      y += Math.ceil(gallery.length / columns) * 208 + 12;
+    }
+    for (const day of target.days) {
+      const visits = project.visits.filter((v) => v.dayId === day.id && places.some((p) => p.id === v.placeId));
+      body += '<rect x="48" y="' + (y + 10) + '" width="8" height="32" rx="4" fill="' + day.color + '"/>';
+      body += line(dayName(project, day), 73, y + 39, 32, 952);
+      y += 53;
+      for (const visit of visits) {
+        const place = places.find((p) => p.id === visit.placeId);
+        const name = placeText(project, key, place);
+        if (!name)
+          continue;
+        body += line(name, 75, y + 27, 31, 952, 'font-weight="' + (visit.overnight ? "700" : "400") + '"');
+        y += 41;
+      }
+    }
+    if (output.credit) {
+      body += line(output.credit, 48, y + 44, 27, 980);
+      y += 58;
+    }
+    const height = Math.max(780, Math.ceil(y + 34));
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="' + height + '" viewBox="0 0 1080 ' + height + '" role="img" aria-label="' + escapeText(title) + '" font-family="Arial,Helvetica,sans-serif" fill="' + ink + '"><defs><linearGradient id="scrim" x2="0" y2="1"><stop offset="0" stop-color="#071d15" stop-opacity="0"/><stop offset="1" stop-color="#071d15" stop-opacity=".82"/></linearGradient></defs><rect width="1080" height="' + height + '" fill="' + paper + '"/>' + body + "</svg>";
+  }
+
+  // src/zip.ts
+  var crcTable = Uint32Array.from({ length: 256 }, (_, byte) => {
+    for (let i = 0;i < 8; i++) {
+      byte = byte >>> 1 ^ (byte & 1 ? 3988292384 : 0);
+    }
+    return byte;
+  });
+  function crc32(bytes) {
+    let crc = 4294967295;
+    for (const byte of bytes)
+      crc = crcTable[(crc ^ byte) & 255] ^ crc >>> 8;
+    return (crc ^ 4294967295) >>> 0;
+  }
+  function zip(entries) {
+    const limit = 4294967295;
+    const encoder = new TextEncoder;
+    const names = new Set;
+    let directoryStart = 0;
+    let directorySize = 0;
+    if (entries.length >= 65535)
+      throw new Error("Select fewer posters for this ZIP.");
+    const files = entries.map((entry) => {
+      if (!entry.name || /[\/\\\x00-\x1f]/.test(entry.name) || entry.name === "." || entry.name === "..")
+        throw new Error("Each poster needs a valid filename.");
+      if (names.has(entry.name))
+        throw new Error("Each poster needs a unique filename.");
+      names.add(entry.name);
+      const name = encoder.encode(entry.name);
+      if (name.length > 65535)
+        throw new Error("A poster filename is too long.");
+      const offset = directoryStart;
+      directoryStart += 30 + name.length + entry.bytes.length;
+      directorySize += 46 + name.length;
+      return { bytes: entry.bytes, name, offset };
+    });
+    const totalSize = directoryStart + directorySize + 22;
+    if (totalSize >= limit)
+      throw new Error("The selected posters exceed the ZIP size limit.");
+    const buffer = new ArrayBuffer(totalSize);
+    const data = new Uint8Array(buffer);
+    const view = new DataView(buffer);
+    let cursor = 0;
+    function word(value) {
+      view.setUint16(cursor, value, true);
+      cursor += 2;
+    }
+    function dword(value) {
+      view.setUint32(cursor, value, true);
+      cursor += 4;
+    }
+    function write(bytes) {
+      data.set(bytes, cursor);
+      cursor += bytes.length;
+    }
+    function fileHeader(size, checksum, nameLength) {
+      word(20);
+      word(1 << 11);
+      word(0);
+      word(0);
+      word(33);
+      dword(checksum);
+      dword(size);
+      dword(size);
+      word(nameLength);
+      word(0);
+    }
+    let directoryOffset = directoryStart;
+    for (const file of files) {
+      const checksum = crc32(file.bytes);
+      cursor = file.offset;
+      dword(67324752);
+      fileHeader(file.bytes.length, checksum, file.name.length);
+      write(file.name);
+      write(file.bytes);
+      cursor = directoryOffset;
+      dword(33639248);
+      word(20);
+      fileHeader(file.bytes.length, checksum, file.name.length);
+      word(0);
+      word(0);
+      word(0);
+      dword(0);
+      dword(file.offset);
+      write(file.name);
+      directoryOffset = cursor;
+    }
+    cursor = directoryOffset;
+    dword(101010256);
+    word(0);
+    word(0);
+    word(files.length);
+    word(files.length);
+    dword(directorySize);
+    dword(directoryStart);
+    word(0);
+    return new Blob([buffer], { type: "application/zip" });
+  }
+
+  // src/output.ts
+  function defaultOutput() {
+    return {
+      title: "My trip",
+      credit: "",
+      accent: "#196952",
+      showDistance: true,
+      showPeak: true,
+      showProfile: true,
+      phone: false,
+      active: "trip",
+      format: "jpg",
+      selected: ["trip"],
+      groups: [],
+      labels: {},
+      placeVisibility: {}
+    };
+  }
+  function slug(name) {
+    return name.normalize("NFKC").replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 80) || "poster";
+  }
+  function posterFiles(project, targets) {
+    const names = new Set;
+    return targets.map((target) => {
+      const base = slug(project.output.title) + "-" + slug(target.name);
+      let name = base;
+      for (let n = 2;names.has(name.toLowerCase()); n++)
+        name = base + "-" + n;
+      names.add(name.toLowerCase());
+      return { target, name: name + "." + project.output.format };
+    });
+  }
+  async function rasterize(svg, format) {
+    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+    const canvas = document.createElement("canvas");
+    try {
+      const image = new Image;
+      image.src = url;
+      await image.decode();
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx)
+        throw Error("Image export is unavailable in this browser.");
+      ctx.drawImage(image, 0, 0);
+      const mime = format === "png" ? "image/png" : "image/jpeg";
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, mime, 0.94));
+      if (!blob || blob.type !== mime)
+        throw Error("The browser could not encode this poster.");
+      return blob;
+    } finally {
+      URL.revokeObjectURL(url);
+      canvas.width = canvas.height = 0;
+    }
+  }
+  function download(blob, name) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  }
+  function mountOutput(host, project, notify) {
+    const onChange = () => {
+      mountOutput(host, project, notify);
+      notify();
+    };
+    const targets = availablePosters(project), state = project.output;
+    if (!project.days.length && !project.photos.length) {
+      host.replaceChildren();
+      return;
+    }
+    const target = targets.find((t) => t.key === state.active) || targets[0];
+    const eligible = posterPlaces(project, target);
+    const checked = (v) => v ? " checked" : "";
+    const options = targets.map((t) => '<option value="' + escapeText(t.key) + '"' + (target.key === t.key ? " selected" : "") + ">" + escapeText(t.name) + "</option>").join("");
+    const checks = targets.map((t) => '<label><input type="checkbox" data-poster-key="' + escapeText(t.key) + '"' + checked(state.selected.includes(t.key)) + ">" + escapeText(t.name) + "</label>").join(" ");
+    const days = targets.filter((t) => t.key.startsWith("day:")).map((t) => '<label><input type="checkbox" data-group-day="' + escapeText(t.days[0].id) + '">' + escapeText(t.name) + "</label>").join(" ");
+    const pins = eligible.map((p) => {
+      const selected = state.placeText?.[target.key]?.[p.id] ?? "name";
+      const modes = { name: "Name", category: "Category", both: "Name and category", pin: "Pin only" };
+      const options = Object.entries(modes).map(([key, name]) => '<option value="' + key + '"' + (selected === key ? " selected" : "") + ">" + name + "</option>").join("");
+      return '<div><label><input type="checkbox" data-visibility="' + escapeText(p.id) + '"' + checked(state.placeVisibility?.[target.key]?.[p.id] ?? p.visible) + ">" + escapeText(p.name) + '</label> <select aria-label="Printed label for ' + escapeText(p.name) + '" data-place-text="' + escapeText(p.id) + '">' + options + "</select></div>";
+    }).join("");
+    const svg = renderPoster(project, target.key);
+    const openDetails = new Set(Array.from(host.querySelectorAll("details[open]")).map((d) => d.id));
+    const open = (id) => openDetails.has(id) ? " open" : "";
+    host.innerHTML = '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label>Poster <select id="poster-target">' + options + '</select></label><label><input type="checkbox" id="poster-phone"' + checked(state.phone) + '> Phone width</label><button id="download-poster">Download ' + state.format.toUpperCase() + "</button></div>" + '<div id="poster-preview" style="margin:18px auto;width:' + (state.phone ? "375px" : "min(100%, 560px)") + ';max-width:100%;line-height:0;box-shadow:0 4px 16px #183e3422">' + svg + "</div>" + '<details id="poster-style"' + open("poster-style") + '><summary>Poster style</summary><fieldset><label>Trip title <input type="text" id="poster-title" maxlength="100" value="' + escapeText(state.title) + '"></label> <label>Credit <input type="text" id="poster-credit" maxlength="140" value="' + escapeText(state.credit) + '"></label> <label>Accent <input id="poster-accent" type="color" value="' + state.accent + '"></label><p>' + ["showDistance", "showPeak", "showProfile"].map((prop, i) => '<label><input type="checkbox" data-stat="' + prop + '"' + checked(state[prop]) + ">" + ["Distance", "Highest point", "Elevation profile"][i] + "</label>").join(" ") + "</p></fieldset></details>" + (eligible.length ? '<details id="poster-labels"' + open("poster-labels") + "><summary>Map labels</summary><fieldset><legend>Places on this poster</legend>" + pins + '<p>Drag a map label to move it. Keyboard users can focus a label and use the arrow keys.</p><button id="reset-labels">Reset label positions</button></fieldset></details>' : "") + '<details id="poster-collection"' + open("poster-collection") + "><summary>Poster collection</summary><fieldset><legend>Group days on one poster</legend>" + days + '<p><label>Group name <input id="group-name" type="text" maxlength="70"></label> <button id="add-group">Create group</button></p></fieldset><fieldset><legend>Include in ZIP</legend>' + checks + "</fieldset></details>" + '<div style="display:flex;gap:12px;align-items:center"><label>File format <select id="poster-format"><option value="jpg">JPG</option><option value="png">PNG</option></select></label><button id="download-zip">Download ZIP</button></div><p id="output-status" role="status"></p>';
+    const get = (selector) => host.querySelector(selector);
+    const message = get("#output-status");
+    const change = (selector, fn) => {
+      const el = get(selector);
+      el.onchange = () => {
+        fn(el);
+        onChange();
+      };
+    };
+    change("#poster-target", (el) => state.active = el.value);
+    change("#poster-phone", (el) => state.phone = el.checked);
+    change("#poster-title", (el) => state.title = el.value);
+    change("#poster-credit", (el) => state.credit = el.value);
+    change("#poster-accent", (el) => state.accent = el.value);
+    get("#poster-format").value = state.format;
+    change("#poster-format", (el) => state.format = el.value === "png" ? "png" : "jpg");
+    for (const el of host.querySelectorAll("[data-stat]")) {
+      const prop = el.dataset.stat;
+      el.onchange = () => {
+        state[prop] = el.checked;
+        onChange();
+      };
+    }
+    for (const el of host.querySelectorAll("[data-visibility]")) {
+      el.onchange = () => {
+        const visibility = state.placeVisibility ||= {};
+        const places = visibility[target.key] ||= {};
+        places[el.dataset.visibility] = el.checked;
+        onChange();
+      };
+    }
+    for (const el of host.querySelectorAll("[data-place-text]")) {
+      el.onchange = () => {
+        const modes = state.placeText ||= {};
+        const places = modes[target.key] ||= {};
+        places[el.dataset.placeText] = el.value;
+        onChange();
+      };
+    }
+    const reset = host.querySelector("#reset-labels");
+    if (reset)
+      reset.onclick = () => {
+        delete state.labels[target.key];
+        onChange();
+      };
+    get("#add-group").onclick = () => {
+      const ids = Array.from(host.querySelectorAll("[data-group-day]:checked"), (el) => el.dataset.groupDay);
+      if (ids.length < 2) {
+        message.textContent = "Choose at least two days for a group.";
+        return;
+      }
+      const id = crypto.randomUUID();
+      const name = get("#group-name").value.trim() || ids.map((id) => targets.find((t) => t.key === "day:" + id).name).join(" + ");
+      state.groups.push({ id, name, dayIds: ids });
+      state.active = "group:" + id;
+      state.selected.push(state.active);
+      onChange();
+    };
+    for (const el of host.querySelectorAll("[data-poster-key]")) {
+      el.onchange = () => {
+        const key = el.dataset.posterKey;
+        state.selected = state.selected.filter((k) => k !== key);
+        if (el.checked)
+          state.selected.push(key);
+        onChange();
+      };
+    }
+    wireLabelEditing(host.querySelector("#poster-preview svg"), target.key, state, onChange);
+    const files = posterFiles(project, targets);
+    const individual = get("#download-poster"), archive = get("#download-zip");
+    const selected = files.filter((f) => state.selected.includes(f.target.key));
+    archive.disabled = !selected.length;
+    const run = async (collection) => {
+      individual.disabled = archive.disabled = true;
+      message.textContent = "Preparing images…";
+      try {
+        const format = state.format, archiveName = slug(state.title) + "-posters.zip";
+        if (collection) {
+          const plan = selected.map((file) => ({ name: file.name, svg: renderPoster(project, file.target.key) }));
+          const entries = [];
+          for (const file of plan) {
+            const blob = await rasterize(file.svg, format);
+            entries.push({ name: file.name, bytes: new Uint8Array(await blob.arrayBuffer()) });
+          }
+          download(zip(entries), archiveName);
+        } else {
+          download(await rasterize(svg, format), files.find((f) => f.target.key === target.key).name);
+        }
+        message.textContent = "Download ready.";
+      } catch (e) {
+        message.textContent = e instanceof Error ? e.message : "Download failed.";
+      } finally {
+        individual.disabled = false;
+        archive.disabled = !selected.length;
+      }
+    };
+    individual.onclick = () => void run(false);
+    archive.onclick = () => void run(true);
+  }
+  function wireLabelEditing(svg, key, state, onChange) {
+    const save = (id, x, y) => {
+      const labels = state.labels[key] ||= {};
+      labels[id] = { x, y };
+      onChange();
+    };
+    for (const label of svg.querySelectorAll("[data-label]")) {
+      const id = label.dataset.label;
+      label.style.cursor = "move";
+      label.style.touchAction = "none";
+      label.setAttribute("tabindex", "0");
+      label.onkeydown = (e) => {
+        const delta = { ArrowLeft: [-7, 0], ArrowRight: [7, 0], ArrowUp: [0, -7], ArrowDown: [0, 7] };
+        if (!delta[e.key])
+          return;
+        e.preventDefault();
+        save(id, Number(label.getAttribute("x")) + delta[e.key][0], Number(label.getAttribute("y")) + delta[e.key][1]);
+        document.querySelector('[data-label="' + CSS.escape(id) + '"]')?.focus();
+      };
+      label.onpointerdown = (e) => {
+        const matrix = svg.getScreenCTM();
+        if (!matrix)
+          return;
+        const local = (event) => new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+        const origin = local(e), x = Number(label.getAttribute("x")), y = Number(label.getAttribute("y"));
+        label.setPointerCapture(e.pointerId);
+        label.onpointermove = (move) => {
+          const p = local(move);
+          label.setAttribute("x", fCoord(x + p.x - origin.x));
+          label.setAttribute("y", fCoord(y + p.y - origin.y));
+        };
+        label.onpointerup = (up) => {
+          label.onpointermove = null;
+          label.onpointerup = null;
+          const p = local(up);
+          save(id, x + p.x - origin.x, y + p.y - origin.y);
+        };
+        label.onpointercancel = () => {
+          label.onpointermove = null;
+          label.onpointerup = null;
+          label.setAttribute("x", String(x));
+          label.setAttribute("y", String(y));
+        };
+      };
+    }
+  }
+  var fCoord = (n) => n.toFixed(1);
+
+  // src/project.ts
+  function newProject() {
+    return {
+      recordings: [],
+      days: [],
+      places: [],
+      visits: [],
+      photos: [],
+      sources: [],
+      output: defaultOutput()
+    };
+  }
+  var format = "map-and-posters";
+  var version = 1;
+  function backup(project) {
+    return JSON.stringify({ format, version, project });
+  }
+  function restore(text) {
+    const data = JSON.parse(text);
+    if (data?.format !== format || data.version !== version)
+      throw new Error("Choose a Map & Posters version 1 backup.");
+    validateProject(data.project);
+    return data.project;
+  }
+  function demand(condition) {
+    if (!condition)
+      throw new Error("This backup contains invalid project data.");
+  }
+  var isText = (value) => typeof value === "string";
+  var isId = (id) => typeof id === "string" && id.length > 0 && !["__proto__", "constructor", "prototype"].includes(id);
+  var isColor = (value) => typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
+  var isFile = (value) => typeof value === "string" && /^data:[^,]*;base64,/.test(value);
+  var isRecord = (value) => Boolean(value && typeof value === "object" && !Array.isArray(value));
+  function validateProject(value) {
+    demand(isRecord(value));
+    const project = value;
+    for (const list of [project.recordings, project.days, project.places, project.visits, project.photos]) {
+      demand(Array.isArray(list));
+      demand(list.every((item) => item && isId(item.id)));
+      demand(new Set(list.map((item) => item.id)).size === list.length);
+    }
+    demand(Array.isArray(project.sources));
+    demand(project.sources.every((source) => source && isText(source.name) && isFile(source.original)));
+    const recordings = new Map(project.recordings.map((recording) => [recording.id, recording]));
+    for (const recording of recordings.values()) {
+      demand(isText(recording.name) && isText(recording.xml) && typeof recording.included === "boolean");
+      demand(Array.isArray(recording.track) && recording.track.length);
+      for (const line of recording.track) {
+        demand(Array.isArray(line) && line.length);
+        demand(line.every((p) => p && validCoordinates(p.lat, p.lon) && (p.ele === null || Number.isFinite(p.ele)) && (p.time === undefined || isText(p.time))));
+      }
+    }
+    const dayIds = new Set(project.days.map((day) => day.id));
+    for (const day of project.days) {
+      demand(isText(day.name) && isColor(day.color) && typeof day.rest === "boolean" && Array.isArray(day.ranges));
+      demand(day.rest ? day.ranges.length === 0 : day.ranges.length > 0);
+      for (const range of day.ranges) {
+        demand(range && [range.segment, range.start, range.end].every(Number.isInteger));
+        const line = recordings.get(range.recordingId)?.track[range.segment];
+        demand(line && range.start >= 0 && range.end >= range.start && range.end < line.length);
+      }
+    }
+    const placeIds = new Set(project.places.map((place) => place.id));
+    for (const place of project.places) {
+      demand(validCoordinates(place.lat, place.lon) && isText(place.name) && isText(place.category) && typeof place.visible === "boolean");
+    }
+    for (const visit of project.visits) {
+      demand(dayIds.has(visit.dayId) && placeIds.has(visit.placeId) && typeof visit.overnight === "boolean");
+      if (visit.position !== undefined) {
+        const ref = visit.position;
+        demand(ref && Number.isInteger(ref.segment) && Number.isInteger(ref.point));
+        demand(recordings.get(ref.recordingId)?.track[ref.segment]?.[ref.point]);
+      }
+    }
+    for (const photo of project.photos) {
+      demand(isText(photo.name) && (photo.dayId === "" || dayIds.has(photo.dayId)) && typeof photo.hero === "boolean");
+      demand(typeof photo.src === "string" && /^data:image\/(?:jpeg|png);base64,/i.test(photo.src) && isFile(photo.original));
+      demand([photo.cropX, photo.cropY, photo.zoom, photo.width, photo.height].every(Number.isFinite));
+      demand(photo.cropX >= 0 && photo.cropX <= 1 && photo.cropY >= 0 && photo.cropY <= 1 && photo.zoom >= 1 && photo.width > 0 && photo.height > 0);
+      if (photo.gps !== undefined)
+        demand(photo.gps && validCoordinates(photo.gps.lat, photo.gps.lon));
+      if (photo.placeId !== undefined)
+        demand(placeIds.has(photo.placeId));
+    }
+    const out = project.output;
+    demand(out && isText(out.title) && isText(out.credit) && isColor(out.accent));
+    demand(isText(out.active) && ["jpg", "png"].includes(out.format));
+    demand([out.showDistance, out.showPeak, out.showProfile, out.phone].every((v) => typeof v === "boolean"));
+    demand(Array.isArray(out.groups) && Array.isArray(out.selected) && out.selected.every(isText));
+    for (const group of out.groups) {
+      demand(group && isId(group.id) && isText(group.name) && Array.isArray(group.dayIds));
+      demand(group.dayIds.every((id) => dayIds.has(id)));
+    }
+    if (out.placeText !== undefined) {
+      demand(isRecord(out.placeText));
+      for (const modes of Object.values(out.placeText))
+        demand(isRecord(modes) && Object.values(modes).every((v) => ["name", "category", "both", "pin"].includes(v)));
+    }
+    demand(isRecord(out.placeVisibility));
+    for (const flags of Object.values(out.placeVisibility))
+      demand(isRecord(flags) && Object.values(flags).every((v) => typeof v === "boolean"));
+    demand(isRecord(out.labels));
+    for (const labels of Object.values(out.labels)) {
+      demand(isRecord(labels));
+      for (const position of Object.values(labels))
+        demand(position && Number.isFinite(position.x) && Number.isFinite(position.y));
+    }
+  }
+
+  // src/storage.ts
+  var connection;
+  function openStore() {
+    if (!connection) {
+      connection = new Promise((resolve, reject) => {
+        const request = indexedDB.open("map-and-posters", 1);
+        request.onupgradeneeded = () => request.result.createObjectStore("projects");
+        request.onsuccess = () => {
+          const db = request.result;
+          db.onversionchange = () => {
+            db.close();
+            connection = undefined;
+          };
+          resolve(db);
+        };
+        request.onerror = () => reject(request.error);
+      }).catch((error) => {
+        connection = undefined;
+        throw error;
+      });
+    }
+    return connection;
+  }
+  async function loadProject() {
+    const db = await openStore();
+    return new Promise((resolve, reject) => {
+      const request = db.transaction("projects").objectStore("projects").get("current");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  async function saveProject(project) {
+    const db = await openStore();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction("projects", "readwrite");
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = () => reject(transaction.error || new Error("Local save was interrupted."));
+      transaction.onerror = () => reject(transaction.error);
+      transaction.objectStore("projects").put(project, "current");
+    });
   }
 
   // src/app.ts
-  var field = (id) => document.querySelector("#" + id);
-  var input = field("file");
-  var title = field("title");
-  var save = field("save");
-  var preview = field("preview");
-  var status = field("status");
-  var track = [];
+  var node = (id) => document.getElementById(id);
+  var fileInput = node("file");
+  var restoreInput = node("restore");
+  var backupButton = node("backup");
+  var status = node("storage-status");
+  var message = node("message");
+  var itinerary = node("itinerary");
+  var assets = node("assets");
+  var output = node("output");
+  var project = newProject();
   var revision = 0;
-  function render() {
-    preview.innerHTML = poster(track, title.value);
+  function changed() {
+    const edit = ++revision;
+    status.textContent = "Saving…";
+    saveProject(project).then(() => {
+      if (edit === revision)
+        status.textContent = "Saved on this device";
+    }).catch(() => {
+      if (edit === revision)
+        status.textContent = "Local save unavailable · Download a backup";
+    });
   }
-  input.onchange = async () => {
-    const file = input.files?.[0];
-    if (!file)
-      return;
-    const id = ++revision;
-    save.disabled = true;
-    try {
-      const data = parseTrack(await file.text());
-      if (id !== revision)
-        return;
-      track = data;
-      title.value = file.name.replace(/\.gpx$/i, "").slice(0, 50);
-      title.disabled = false;
-      render();
-      status.textContent = file.name;
-    } catch (e) {
-      if (id === revision)
-        status.textContent = e.message;
-    } finally {
-      if (id === revision) {
-        save.disabled = !track.length;
-        input.value = "";
+  function mergeDay(removed, kept) {
+    for (const item of [...project.visits, ...project.photos])
+      if (item.dayId === removed)
+        item.dayId = kept;
+    const out = project.output;
+    for (const group of out.groups)
+      group.dayIds = Array.from(new Set(group.dayIds.map((id) => id === removed ? kept : id)));
+    const oldKey = "day:" + removed;
+    const newKey = "day:" + kept;
+    if (out.active === oldKey)
+      out.active = newKey;
+    out.selected = Array.from(new Set(out.selected.map((key) => key === oldKey ? newKey : key)));
+    for (const settings of [out.labels, out.placeVisibility, out.placeText]) {
+      if (!settings)
+        continue;
+      if (settings[oldKey]) {
+        Object.assign(settings, { [newKey]: { ...settings[oldKey], ...settings[newKey] } });
+        delete settings[oldKey];
       }
     }
-  };
-  title.oninput = render;
-  save.onclick = async () => {
-    const name = title.value.trim() || "Trip";
-    const id = revision;
-    const url = URL.createObjectURL(new Blob([preview.innerHTML], { type: "image/svg+xml;charset=utf-8" }));
-    save.disabled = true;
+  }
+  function showItinerary() {
+    mountItinerary(itinerary, project, () => {
+      showAssets();
+      showOutput();
+      changed();
+    }, mergeDay);
+  }
+  function showAssets() {
+    mountAssets(assets, project, () => {
+      showOutput();
+      changed();
+    });
+  }
+  function showOutput() {
+    mountOutput(output, project, changed);
+  }
+  function render() {
+    showItinerary();
+    showAssets();
+    showOutput();
+  }
+  function busy(value) {
+    fileInput.disabled = restoreInput.disabled = backupButton.disabled = value;
+  }
+  fileInput.onchange = async () => {
+    const files = Array.from(fileInput.files || []);
+    busy(true);
+    const errors = [];
+    let imported = 0;
     try {
-      const img = new Image;
-      img.src = url;
-      await img.decode();
-      const canvas = document.createElement("canvas");
-      canvas.width = 1080;
-      canvas.height = 1350;
-      canvas.getContext("2d").drawImage(img, 0, 0);
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.95));
-      if (!blob)
-        throw new Error;
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = name + ".jpg";
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-      if (revision === id)
-        status.textContent = "JPG ready · " + name;
-    } catch {
-      if (revision === id)
-        status.textContent = "Could not export the poster. Please try again.";
+      for (const file of files) {
+        try {
+          const [xml, original] = await Promise.all([file.text(), asDataUrl(file)]);
+          const doc = parseGpx(xml);
+          const waypoints = { places: [] };
+          const count = importWaypoints(waypoints, doc);
+          try {
+            importRecording(project, xml, file.name, doc);
+            if (project.recordings.length === 1 && project.output.title === newProject().output.title)
+              project.output.title = file.name.replace(/\.gpx$/i, "").slice(0, 80);
+          } catch (error) {
+            if (!count)
+              throw error;
+          }
+          project.places.push(...waypoints.places);
+          project.sources.push({ name: file.name, original });
+          imported++;
+        } catch (error) {
+          errors.push(file.name + " — " + error.message);
+        }
+      }
+      if (imported) {
+        changed();
+        render();
+      }
+      message.textContent = [imported ? "Imported " + imported + " GPX " + (imported === 1 ? "file." : "files.") : "", ...errors].filter(Boolean).join(" ");
     } finally {
-      URL.revokeObjectURL(url);
-      if (revision === id)
-        save.disabled = false;
+      busy(false);
+      fileInput.value = "";
     }
   };
+  backupButton.onclick = () => {
+    const href = URL.createObjectURL(new Blob([backup(project)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.download = "map-and-posters-backup.json";
+    link.href = href;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(href), 60000);
+  };
+  restoreInput.onchange = async () => {
+    const file = restoreInput.files?.[0];
+    if (!file)
+      return;
+    busy(true);
+    try {
+      const restored = restore(await file.text());
+      if ((project.sources.length || project.days.length || project.places.length || project.photos.length) && !window.confirm("Replace the current trip with this backup?"))
+        return;
+      const previous = project;
+      project = restored;
+      try {
+        render();
+      } catch (error) {
+        project = previous;
+        render();
+        throw error;
+      }
+      changed();
+      message.textContent = "Restored " + file.name;
+    } catch (error) {
+      message.textContent = "Could not restore this backup. " + error.message;
+    } finally {
+      busy(false);
+      restoreInput.value = "";
+    }
+  };
+  document.querySelectorAll("[data-tab]").forEach((button) => {
+    button.onclick = () => {
+      const tab = button.dataset.tab;
+      itinerary.hidden = tab !== "itinerary";
+      assets.hidden = tab !== "assets";
+      document.querySelectorAll("[data-tab]").forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+    };
+  });
+  async function start() {
+    busy(true);
+    try {
+      project = await loadProject() || project;
+      status.textContent = project.sources.length ? "Saved on this device" : "";
+    } catch {
+      status.textContent = "Local save unavailable · Download a backup";
+    } finally {
+      render();
+      busy(false);
+    }
+  }
+  start();
 })();
-</script></html>
+</script></body></html>

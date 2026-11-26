@@ -1,4 +1,4 @@
-export type Point = { lat: number, lon: number, ele: number | null }
+export type Point = { lat: number, lon: number, ele: number | null, time?: string }
 export type Track = Point[][]
 const rad = Math.PI / 180
 
@@ -8,10 +8,15 @@ export function distance(a: Point, b: Point) {
   return 12742 * Math.asin(Math.sqrt(Math.min(1,h)))
 }
 
-export function parseTrack(xml: string): Track {
+export function parseGpx(xml: string): Document {
   const doc = new DOMParser().parseFromString(xml, 'application/xml')
   if (doc.documentElement.localName !== 'gpx' || doc.getElementsByTagName('parsererror').length)
     throw new Error('Choose a valid GPX file.')
+  return doc
+}
+
+export function parseTrack(input: string | Document): Track {
+  const doc = typeof input === "string" ? parseGpx(input) : input
   function* children(el: Element, name: string): Generator<Element> {
     for (let child = el.firstElementChild; child; child = child.nextElementSibling) {
       if (child.localName === name) yield child
@@ -30,7 +35,10 @@ export function parseTrack(xml: string): Track {
           continue
         }
         const elevation = number(children(el,'ele').next().value?.textContent)
-        run.push({lat, lon, ele: Number.isFinite(elevation) ? elevation : null})
+        const time = children(el,'time').next().value?.textContent?.trim()
+        const point: Point = {lat, lon, ele: Number.isFinite(elevation) ? elevation : null}
+        if (time) point.time = time
+        run.push(point)
       }
       if (run.length) track.push(run)
     }
