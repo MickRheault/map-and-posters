@@ -398,5 +398,58 @@ test('Step 3 curates places, records an overnight visit, exports GPX, and hides 
     expect(app.doc.querySelector('#output svg')?.textContent).toContain('Farm homestay')
     app.button('Download GPX with selected places')
     expect(await app.downloads.get('trip-with-places.gpx')?.text()).toContain('Farm homestay')
+    await Bun.sleep(0)
+  } finally { app.dom.window.close() }
+})
+
+test('Step 4 assigns photos, sets lead photo and crop/zoom, approves GPS pin, and hides place-creation forms', async()=>{
+  const app=await open()
+  try {
+    const route=gpx('Loop.gpx',[[18,98,300],[18,98.02,320]])
+    await app.upload('#file',[route])
+    app.button('Next: Split days')
+    app.button('Next: Places')
+    app.button('Next: Photos')
+    expect(app.doc.querySelector('[data-step="4"]')?.getAttribute('aria-current')).toBe('step')
+    expect(app.doc.querySelector('#assets')?.textContent).toContain('Photos')
+    expect(app.doc.querySelector('#assets')?.textContent).not.toContain('Places & visits')
+
+    const target=app.field('Add photos to') as HTMLSelectElement
+    app.change(target,target.options[1].value)
+    const baseJpeg=await sharp({create:{width:800,height:600,channels:3,background:'#b03020'}}).jpeg().toBuffer()
+    const tiff=new Uint8Array(128),td=new DataView(tiff.buffer)
+    td.setUint16(0,0x4949,true);td.setUint16(2,42,true);td.setUint32(4,8,true);td.setUint16(8,1,true)
+    td.setUint16(10,0x8825,true);td.setUint16(12,4,true);td.setUint32(14,1,true);td.setUint32(18,26,true)
+    td.setUint16(26,4,true)
+    for(let e=0;e<4;e++){
+      const at=28+12*e,ref=e%2===0
+      td.setUint16(at,e+1,true);td.setUint16(at+2,ref?2:5,true);td.setUint32(at+4,ref?2:3,true)
+      if(ref) tiff[at+8]=e===0?78:69
+      else {const off=e===1?80:104;td.setUint32(at+8,off,true);[e===1?18:98,1,0].forEach((n,i)=>{td.setUint32(off+8*i,n,true);td.setUint32(off+8*i+4,1,true)})}
+    }
+    const app1=new Uint8Array(10+tiff.length)
+    app1.set([0xff,0xe1,0,0,69,120,105,102,0,0]);app1.set(tiff,10)
+    new DataView(app1.buffer).setUint16(2,tiff.length+8)
+    const gpsPhoto=Buffer.concat([baseJpeg.subarray(0,2),app1,baseJpeg.subarray(2)])
+    const secondPhoto=await sharp({create:{width:800,height:600,channels:3,background:'#2050b0'}}).jpeg().toBuffer()
+    await app.upload('#assets input[type=file]',[
+      new File([gpsPhoto],'viewpoint.jpg',{type:'image/jpeg'}),
+      new File([secondPhoto],'ridge.jpg',{type:'image/jpeg'})
+    ])
+    const box=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='ridge.jpg')!
+    box.open=true
+    ;(app.field('Use as lead photo',box) as HTMLInputElement).click()
+    const zoom=app.field('Crop zoom',box)
+    zoom.value='1.75';zoom.dispatchEvent(new app.dom.window.Event('change'))
+
+    const gpsBox=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='viewpoint.jpg')!
+    gpsBox.open=true
+    Array.from(gpsBox.querySelectorAll('button')).find(b=>b.textContent==='Add place from photo GPS')!.click()
+
+    app.change(app.doc.querySelector<HTMLSelectElement>('#poster-target')!,app.doc.querySelector<HTMLSelectElement>('#poster-target')!.options[1].value)
+    const svg=app.doc.querySelector('#output svg')!
+    expect(svg.querySelectorAll('image').length).toBe(2)
+    expect(svg.textContent).toContain('viewpoint')
+    await Bun.sleep(0)
   } finally { app.dom.window.close() }
 })

@@ -699,7 +699,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
         const day = select(dayOptions()), overnight = input("", "checkbox"), position = element("select");
         let refs = [];
         box.ontoggle = () => {
-          if (box.open)
+          if (box.isConnected && box.open)
             options();
         };
         day.onchange = options;
