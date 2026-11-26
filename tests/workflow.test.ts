@@ -347,3 +347,28 @@ test('Step 1 can start a photo-only rest day before any GPX is imported', async(
     expect(app.doc.querySelector('#output svg')?.textContent).toContain('Day 1')
   } finally { app.dom.window.close() }
 })
+
+test('Step 2 splits an out-and-back, inserts a named rest day, and hides recording-order clutter', async()=>{
+  const app=await open()
+  try {
+    const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.01,310],[18,98,300],[18,98.03,320],[18,98.05,340]])
+    await app.upload('#file',[route])
+    app.button('Next: Split days')
+    expect(app.doc.querySelector('[data-step="2"]')?.getAttribute('aria-current')).toBe('step')
+    expect(app.doc.querySelectorAll('#itinerary .recording-row')).toHaveLength(0)
+
+    const boundary=app.field('Boundary point')
+    boundary.value='3';boundary.dispatchEvent(new app.dom.window.Event('input'))
+    app.button('Create next day')
+    const days=app.field('Edit day') as HTMLSelectElement
+    expect(days.options).toHaveLength(2)
+    app.change(days,days.options[1].value)
+    app.button('Rest day after')
+    app.change(app.field('Day name'),'Pai')
+
+    const svgText=app.doc.querySelector('#output svg')?.textContent || ''
+    expect(svgText).toContain('Day 1')
+    expect(svgText).toContain('Day 2')
+    expect(svgText).toContain('Day 3 · Pai')
+  } finally { app.dom.window.close() }
+})
