@@ -348,8 +348,8 @@ test('Step 1 can start a photo-only rest day before any GPX is imported', async(
   } finally { app.dom.window.close() }
 })
 
-test('Step 2 splits an out-and-back, inserts a named rest day, and hides recording-order clutter', async()=>{
-  const app=await open()
+test('Step 2 splits an out-and-back on a repeated pass, inserts a named rest day, groups days, and hides recording-order clutter', async()=>{
+  const app=await open(),windows=[app.dom.window]
   try {
     const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.01,310],[18,98,300],[18,98.03,320],[18,98.05,340]])
     await app.upload('#file',[route])
@@ -357,23 +357,56 @@ test('Step 2 splits an out-and-back, inserts a named rest day, and hides recordi
     expect(app.doc.querySelector('[data-step="2"]')?.getAttribute('aria-current')).toBe('step')
     expect(app.doc.querySelectorAll('#itinerary .recording-row')).toHaveLength(0)
 
-    const boundary=app.field('Boundary point')
-    boundary.value='3';boundary.dispatchEvent(new app.dom.window.Event('input'))
+    // Pick the repeated coordinate (18, 98.01) on the boundary map and choose Pass 2
+    const map=app.doc.querySelector<SVGSVGElement>('#itinerary svg[aria-label="Choose a boundary on the recorded route"]')!
+    Object.defineProperty(map,'getBoundingClientRect',{value:()=>({left:0,top:0,width:400,height:200})})
+    const pts: {x:number,y:number}[]=[]
+    for(const p of Array.from(map.querySelectorAll('path')).reverse()) {
+      for(const m of p.getAttribute('d')!.matchAll(/([ML])([\d.-]+),([\d.-]+)/g)) {
+        const pt={x:Number(m[2]),y:Number(m[3])},last=pts[pts.length-1]
+        if(!last || Math.hypot(pt.x-last.x,pt.y-last.y)>0.1) pts.push(pt)
+      }
+    }
+    const repeat=pts.find((pt,i)=>i>0 && pts.slice(i+1,-1).some(o=>Math.hypot(o.x-pt.x,o.y-pt.y)<0.5))!
+    map.dispatchEvent(new app.dom.window.MouseEvent('click',{clientX:repeat.x,clientY:repeat.y}))
+    const passes=app.field('Matching visits') as HTMLSelectElement
+    expect(passes.options).toHaveLength(2)
+    app.change(passes,passes.options[1].value)
     app.button('Create next day')
+
     const days=app.field('Edit day') as HTMLSelectElement
     expect(days.options).toHaveLength(2)
     app.change(days,days.options[1].value)
     app.button('Rest day after')
     app.change(app.field('Day name'),'Pai')
 
+    // Also verify grouping consecutive riding days works in Step 2
+    const groupRoute=gpx('Next.gpx',[[18,98.05,340],[18,98.06,350]])
+    app.button('Back')
+    await app.upload('#file',[groupRoute])
+    app.button('Next: Split days')
+    const daysAfter=app.field('Edit day') as HTMLSelectElement
+    app.change(daysAfter,daysAfter.options[0].value)
+    app.button('Group with next day')
+
     const svgText=app.doc.querySelector('#output svg')?.textContent || ''
-    expect(svgText).toContain('Day 1')
-    expect(svgText).toContain('Day 2')
-    expect(svgText).toContain('Day 3 · Pai')
-  } finally { app.dom.window.close() }
+    expect(svgText).toContain('Day 2 · Pai')
+    app.button('Full editor')
+    expect(app.doc.querySelector('#output svg')?.textContent).toContain('Day 2 · Pai')
+    app.button('Guided wizard')
+    await until(()=>app.doc.querySelector('#storage-status')?.textContent==='Saved on this device','Autosave failed')
+
+    const reloaded=await open(app.store);windows.push(reloaded.dom.window)
+    reloaded.button('Next: Split days')
+    expect((reloaded.field('Edit day') as HTMLSelectElement).options.length).toBe(3)
+    expect(reloaded.doc.querySelector('#output svg')?.textContent).toContain('Day 2 · Pai')
+  } finally {
+    await Bun.sleep(0)
+    windows.forEach(w=>w.close())
+  }
 })
 
-test('Step 3 curates places, records an overnight visit, exports GPX, and hides photo controls', async()=>{
+test('Step 3 curates places, records an overnight visit, exports GPX, persists across steps/modes, and hides photo controls', async()=>{
   const app=await open()
   try {
     const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.01,310],[18,98,300]])
@@ -398,12 +431,22 @@ test('Step 3 curates places, records an overnight visit, exports GPX, and hides 
     expect(app.doc.querySelector('#output svg')?.textContent).toContain('Farm homestay')
     app.button('Download GPX with selected places')
     expect(await app.downloads.get('trip-with-places.gpx')?.text()).toContain('Farm homestay')
+
+    // Persist across step navigation and mode switch
+    app.button('Back')
+    app.button('Next: Places')
+    expect(app.doc.querySelector('#assets')?.textContent).toContain('Overnight')
+    app.button('Full editor')
+    app.button('Places & photos')
+    expect(app.doc.querySelector('#assets')?.textContent).toContain('Overnight')
+    app.button('Guided wizard')
+    expect(app.doc.querySelector('#output svg')?.textContent).toContain('Farm homestay')
     await Bun.sleep(0)
   } finally { app.dom.window.close() }
 })
 
-test('Step 4 assigns photos, sets lead photo and crop/zoom, approves GPS pin, and hides place-creation forms', async()=>{
-  const app=await open()
+test('Step 4 assigns photos, sets lead photo and crop/zoom, approves GPS pin, persists on reload, and hides place-creation forms', async()=>{
+  const app=await open(),windows=[app.dom.window]
   try {
     const route=gpx('Loop.gpx',[[18,98,300],[18,98.02,320]])
     await app.upload('#file',[route])
@@ -450,8 +493,18 @@ test('Step 4 assigns photos, sets lead photo and crop/zoom, approves GPS pin, an
     const svg=app.doc.querySelector('#output svg')!
     expect(svg.querySelectorAll('image').length).toBe(2)
     expect(svg.textContent).toContain('viewpoint')
+
+    await until(()=>app.doc.querySelector('#storage-status')?.textContent==='Saved on this device','Autosave failed')
+    const reloaded=await open(app.store);windows.push(reloaded.dom.window)
+    reloaded.button('4. Photos')
+    const reloadedBox=Array.from(reloaded.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='ridge.jpg')!
+    expect((reloaded.field('Use as lead photo',reloadedBox) as HTMLInputElement).checked).toBe(true)
+    expect(reloaded.field('Crop zoom',reloadedBox).value).toBe('1.75')
+    expect(reloaded.doc.querySelector('#output svg')?.textContent).toContain('viewpoint')
+  } finally {
     await Bun.sleep(0)
-  } finally { app.dom.window.close() }
+    windows.forEach(w=>w.close())
+  }
 })
 
 test('Step 5 unlocks full Poster Studio, keeps label moves poster-specific, and completes full 5-step wizard export, reload, and backup restore', async()=>{
@@ -497,12 +550,20 @@ test('Step 5 unlocks full Poster Studio, keeps label moves poster-specific, and 
     // Step 5: Style, Labels, Collection & Export
     app.button('Next: Style & export')
     expect(app.doc.querySelector('[data-step="5"]')?.getAttribute('aria-current')).toBe('step')
+    expect(app.doc.querySelector<HTMLElement>('.restore')?.hidden).toBe(true)
     expect(app.doc.querySelector('#wizard-step-extra')?.textContent).toContain('Download a backup')
     expect(app.doc.querySelector('#download-poster')).not.toBeNull()
     expect(app.doc.querySelector('#download-zip')).not.toBeNull()
     expect(app.doc.querySelector('#poster-style')).not.toBeNull()
 
-    // Move label on Day 1 poster via keyboard and confirm Full trip label stays independent
+    // Create a multi-day group in Step 5 poster collection
+    const groupChecks=Array.from(app.doc.querySelectorAll<HTMLInputElement>('[data-group-day]'))
+    groupChecks[0].click();groupChecks[1].click()
+    app.change(app.field('Group name'),'Riding days')
+    app.button('Create group')
+    expect(app.doc.querySelector('#poster-target')?.textContent).toContain('Riding days')
+
+    // Move label on Day 1 poster via keyboard and confirm focus stays on label and Full trip label stays independent
     const posterSel=app.doc.querySelector<HTMLSelectElement>('#poster-target')!
     const day1Value=Array.from(posterSel.options).find(o=>o.value.startsWith('day:'))!.value
     app.change(posterSel,day1Value)
@@ -513,6 +574,7 @@ test('Step 5 unlocks full Poster Studio, keeps label moves poster-specific, and 
     app.doc.querySelector<SVGTextElement>('#poster-preview svg [data-label]')!.dispatchEvent(
       new app.dom.window.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true})
     )
+    expect(app.doc.activeElement).toBe(app.doc.querySelector('#poster-preview svg [data-label]'))
     const labelAfter={
       x:app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('x'),
       y:app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('y')

@@ -74,11 +74,13 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void,mod
   const svg=renderPoster(project,target.key)
   const previewHeader='<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label>Poster <select id="poster-target">'+options+'</select></label><label><input type="checkbox" id="poster-phone"'+checked(state.phone)+'> Phone width</label>'+(mode==='full'?'<button id="download-poster">Download '+state.format.toUpperCase()+'</button>':'')+'</div>'
   const previewCanvas='<div id="poster-preview" style="margin:18px auto;width:'+ (state.phone?'375px':'min(100%, 560px)')+';max-width:100%;line-height:0;box-shadow:0 4px 16px #183e3422">'+svg+'</div>'
-  if (mode==='preview') {
-    host.innerHTML=previewHeader+previewCanvas
-    const get=<T extends HTMLElement>(selector:string)=>host.querySelector<T>(selector)!
+  const wirePreview=(get:<T extends HTMLElement>(selector:string)=>T)=>{
     get<HTMLSelectElement>('#poster-target').onchange=e=>{state.active=(e.currentTarget as HTMLSelectElement).value;onChange()}
     get<HTMLInputElement>('#poster-phone').onchange=e=>{state.phone=(e.currentTarget as HTMLInputElement).checked;onChange()}
+  }
+  if (mode==='preview') {
+    host.innerHTML=previewHeader+previewCanvas
+    wirePreview(<T extends HTMLElement>(selector:string)=>host.querySelector<T>(selector)!)
     return
   }
   const checks=targets.map(t=>'<label><input type="checkbox" data-poster-key="'+escapeText(t.key)+'"'+checked(state.selected.includes(t.key))+'>'+escapeText(t.name)+'</label>').join(' ')
@@ -103,8 +105,7 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void,mod
     const el=get<T>(selector)
     el.onchange=()=>{fn(el);onChange()}
   }
-  change<HTMLSelectElement>('#poster-target',el=>state.active=el.value)
-  change<HTMLInputElement>('#poster-phone',el=>state.phone=el.checked)
+  wirePreview(get)
   change('#poster-title',el=>state.title=el.value)
   change('#poster-credit',el=>state.credit=el.value)
   change('#poster-accent',el=>state.accent=el.value)
@@ -194,7 +195,8 @@ function wireLabelEditing(svg:SVGSVGElement,key:string,state:OutputState,onChang
       if(!delta[e.key]) return
       e.preventDefault()
       save(id,Number(label.getAttribute('x'))+delta[e.key][0],Number(label.getAttribute('y'))+delta[e.key][1])
-      document.querySelector<SVGTextElement>('[data-label="'+CSS.escape(id)+'"]')?.focus()
+      const escaped=typeof CSS==='object' && typeof CSS.escape==='function'?CSS.escape(id):id.replace(/[^\w-]/g,'\\$&')
+      document.querySelector<SVGTextElement>('[data-label="'+escaped+'"]')?.focus()
     }
     label.onpointerdown=e=>{
       const matrix=svg.getScreenCTM()

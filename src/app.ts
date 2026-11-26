@@ -18,6 +18,7 @@ const assets = node('assets')
 const output = node('output')
 const importTools = node('import-tools')
 const backupTools = node('backup-tools')
+const restoreTools = document.querySelector<HTMLElement>('.restore')!
 const tabs = document.querySelector<HTMLElement>('.tabs')!
 const stepper = node('wizard-stepper')
 const wizardHead = node('wizard-head')
@@ -28,13 +29,25 @@ const wizardNav = node('wizard-nav')
 const wizardBack = node<HTMLButtonElement>('wizard-back')
 const wizardNext = node<HTMLButtonElement>('wizard-next')
 
-const steps = [
-  { label: 'Import GPX', title: 'Step 1: Import GPX & Order', guide: 'Upload one or more GPX files, check their order, and exclude duplicate recordings. You can also restore a saved backup or start with a photo-only rest day.' },
-  { label: 'Split days', title: 'Step 2: Split Days & Rest Days', guide: 'Pick a day, click the map or elevation profile to set boundaries, rename or recolour days, and insert rest days.' },
-  { label: 'Places', title: 'Step 3: Places & Visits', guide: 'Review imported GPX waypoints, add stops by coordinates or map click, choose which places print on posters, and record overnight stays.' },
-  { label: 'Photos', title: 'Step 4: Photos & Crops', guide: 'Assign photos to the full trip or a specific day, pick a lead photo, adjust crops, and approve photo GPS pins.' },
-  { label: 'Style & export', title: 'Step 5: Style, Labels & Export', guide: 'Use the Poster studio on the right to customize title, colours, and map labels, group days, and download JPG, PNG, or ZIP posters.' },
-] as const
+type StepConfig = {
+  label: string
+  title: string
+  guide: string
+  itinerary?: 'recordings' | 'days'
+  assets?: 'places' | 'photos'
+  output: 'preview' | 'full'
+  showImport?: boolean
+  showBackup?: boolean
+  showRestore?: boolean
+}
+
+const steps: readonly StepConfig[] = [
+  { label: 'Import GPX', title: 'Step 1: Import GPX & Order', guide: 'Upload one or more GPX files, check their order, and exclude duplicate recordings. You can also restore a saved backup or start with a photo-only rest day.', itinerary: 'recordings', output: 'preview', showImport: true, showBackup: true, showRestore: true },
+  { label: 'Split days', title: 'Step 2: Split Days & Rest Days', guide: 'Pick a day, click the map or elevation profile to set boundaries, rename or recolour days, and insert rest days.', itinerary: 'days', output: 'preview' },
+  { label: 'Places', title: 'Step 3: Places & Visits', guide: 'Review imported GPX waypoints, add stops by coordinates or map click, choose which places print on posters, and record overnight stays.', assets: 'places', output: 'preview' },
+  { label: 'Photos', title: 'Step 4: Photos & Crops', guide: 'Assign photos to the full trip or a specific day, pick a lead photo, adjust crops, and approve photo GPS pins.', assets: 'photos', output: 'preview' },
+  { label: 'Style & export', title: 'Step 5: Style, Labels & Export', guide: 'Use the Poster studio on the right to customize title, colours, and map labels, group days, and download JPG, PNG, or ZIP posters.', output: 'full', showBackup: true },
+]
 
 let project = newProject()
 let revision = 0
@@ -70,36 +83,38 @@ function mergeDay(removed: string, kept: string) {
   }
 }
 
+function activeStep() { return steps[step - 1] }
+
 function showItinerary() {
-  const section = mode === 'full' ? 'all' : step === 1 ? 'recordings' : step === 2 ? 'days' : undefined
-  if (!section) return
+  const section = mode === 'full' ? 'all' : activeStep().itinerary
+  if (!section) { itinerary.replaceChildren(); return }
   mountItinerary(itinerary, project, () => { showAssets(); showOutput(); changed() }, mergeDay, section)
 }
 function showAssets() {
-  const section = mode === 'full' ? 'all' : step === 3 ? 'places' : step === 4 ? 'photos' : undefined
-  if (!section) return
+  const section = mode === 'full' ? 'all' : activeStep().assets
+  if (!section) { assets.replaceChildren(); return }
   mountAssets(assets, project, () => { showOutput(); changed() }, section)
 }
 function showOutput() {
-  mountOutput(output, project, changed, mode === 'full' || step === 5 ? 'full' : 'preview')
+  mountOutput(output, project, changed, mode === 'full' ? 'full' : activeStep().output)
 }
 
 function syncChrome() {
-  const wizard = mode === 'wizard'
+  const wizard = mode === 'wizard', current = activeStep()
   document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(button => {
     button.setAttribute('aria-pressed', String(button.dataset.mode === mode))
   })
   stepper.hidden = wizardHead.hidden = wizardNav.hidden = !wizard
   tabs.hidden = wizard
-  importTools.hidden = wizard && step !== 1
-  backupTools.hidden = wizard && step !== 1 && step !== 5
-  itinerary.hidden = wizard ? step > 2 : fullTab !== 'itinerary'
-  assets.hidden = wizard ? (step !== 3 && step !== 4) : fullTab !== 'assets'
+  importTools.hidden = wizard && !current.showImport
+  backupTools.hidden = wizard && !current.showBackup
+  restoreTools.hidden = wizard && !current.showRestore
+  itinerary.hidden = wizard ? !current.itinerary : fullTab !== 'itinerary'
+  assets.hidden = wizard ? !current.assets : fullTab !== 'assets'
   wizardExtra.replaceChildren()
   if (wizard) {
-    const info = steps[step - 1]
-    wizardHeading.textContent = info.title
-    wizardGuide.textContent = info.guide
+    wizardHeading.textContent = current.title
+    wizardGuide.textContent = current.guide
     document.querySelectorAll<HTMLButtonElement>('[data-step]').forEach(button => {
       if (Number(button.dataset.step) === step) button.setAttribute('aria-current', 'step')
       else button.removeAttribute('aria-current')
@@ -125,10 +140,10 @@ function render() {
   showOutput()
 }
 
-function goStep(next: number, focusHeading = true) {
+function goStep(next: number) {
   step = Math.max(1, Math.min(steps.length, next))
   render()
-  if (focusHeading && mode === 'wizard') wizardHeading.focus()
+  if (mode === 'wizard') wizardHeading.focus()
 }
 
 function busy(value: boolean) {

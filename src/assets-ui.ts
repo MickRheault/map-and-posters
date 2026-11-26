@@ -131,7 +131,7 @@ export function mountAssets(host:HTMLElement,project:AssetProject,onChange:()=>v
   notice.setAttribute('role','status')
   const mapBox=details('Drop a pin on the map',project,'map')
   mapBox.ontoggle=()=>{
-    if (!mapBox.open || mapBox.querySelector('svg')) return
+    if (!mapBox.isConnected || !mapBox.open || mapBox.querySelector('svg')) return
     mapBox.append(pinMap(project,coords=>{
       location.value=coords.lat.toFixed(7)+', '+coords.lon.toFixed(7)
       notice.textContent='Pin positioned. Choose Add place to save.'

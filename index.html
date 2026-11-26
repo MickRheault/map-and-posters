@@ -632,7 +632,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     notice.setAttribute("role", "status");
     const mapBox = details("Drop a pin on the map", project, "map");
     mapBox.ontoggle = () => {
-      if (!mapBox.open || mapBox.querySelector("svg"))
+      if (!mapBox.isConnected || !mapBox.open || mapBox.querySelector("svg"))
         return;
       mapBox.append(pinMap(project, (coords) => {
         location.value = coords.lat.toFixed(7) + ", " + coords.lon.toFixed(7);
@@ -1545,9 +1545,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     const svg = renderPoster(project, target.key);
     const previewHeader = '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label>Poster <select id="poster-target">' + options + '</select></label><label><input type="checkbox" id="poster-phone"' + checked(state.phone) + "> Phone width</label>" + (mode === "full" ? '<button id="download-poster">Download ' + state.format.toUpperCase() + "</button>" : "") + "</div>";
     const previewCanvas = '<div id="poster-preview" style="margin:18px auto;width:' + (state.phone ? "375px" : "min(100%, 560px)") + ';max-width:100%;line-height:0;box-shadow:0 4px 16px #183e3422">' + svg + "</div>";
-    if (mode === "preview") {
-      host.innerHTML = previewHeader + previewCanvas;
-      const get = (selector) => host.querySelector(selector);
+    const wirePreview = (get) => {
       get("#poster-target").onchange = (e) => {
         state.active = e.currentTarget.value;
         onChange();
@@ -1556,6 +1554,10 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
         state.phone = e.currentTarget.checked;
         onChange();
       };
+    };
+    if (mode === "preview") {
+      host.innerHTML = previewHeader + previewCanvas;
+      wirePreview((selector) => host.querySelector(selector));
       return;
     }
     const checks = targets.map((t) => '<label><input type="checkbox" data-poster-key="' + escapeText(t.key) + '"' + checked(state.selected.includes(t.key)) + ">" + escapeText(t.name) + "</label>").join(" ");
@@ -1578,8 +1580,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
         onChange();
       };
     };
-    change("#poster-target", (el) => state.active = el.value);
-    change("#poster-phone", (el) => state.phone = el.checked);
+    wirePreview(get);
     change("#poster-title", (el) => state.title = el.value);
     change("#poster-credit", (el) => state.credit = el.value);
     change("#poster-accent", (el) => state.accent = el.value);
@@ -1685,7 +1686,8 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
           return;
         e.preventDefault();
         save(id, Number(label.getAttribute("x")) + delta[e.key][0], Number(label.getAttribute("y")) + delta[e.key][1]);
-        document.querySelector('[data-label="' + CSS.escape(id) + '"]')?.focus();
+        const escaped = typeof CSS === "object" && typeof CSS.escape === "function" ? CSS.escape(id) : id.replace(/[^\w-]/g, "\\$&");
+        document.querySelector('[data-label="' + escaped + '"]')?.focus();
       };
       label.onpointerdown = (e) => {
         const matrix = svg.getScreenCTM();
@@ -1879,6 +1881,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
   var output = node("output");
   var importTools = node("import-tools");
   var backupTools = node("backup-tools");
+  var restoreTools = document.querySelector(".restore");
   var tabs = document.querySelector(".tabs");
   var stepper = node("wizard-stepper");
   var wizardHead = node("wizard-head");
@@ -1889,11 +1892,11 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
   var wizardBack = node("wizard-back");
   var wizardNext = node("wizard-next");
   var steps = [
-    { label: "Import GPX", title: "Step 1: Import GPX & Order", guide: "Upload one or more GPX files, check their order, and exclude duplicate recordings. You can also restore a saved backup or start with a photo-only rest day." },
-    { label: "Split days", title: "Step 2: Split Days & Rest Days", guide: "Pick a day, click the map or elevation profile to set boundaries, rename or recolour days, and insert rest days." },
-    { label: "Places", title: "Step 3: Places & Visits", guide: "Review imported GPX waypoints, add stops by coordinates or map click, choose which places print on posters, and record overnight stays." },
-    { label: "Photos", title: "Step 4: Photos & Crops", guide: "Assign photos to the full trip or a specific day, pick a lead photo, adjust crops, and approve photo GPS pins." },
-    { label: "Style & export", title: "Step 5: Style, Labels & Export", guide: "Use the Poster studio on the right to customize title, colours, and map labels, group days, and download JPG, PNG, or ZIP posters." }
+    { label: "Import GPX", title: "Step 1: Import GPX & Order", guide: "Upload one or more GPX files, check their order, and exclude duplicate recordings. You can also restore a saved backup or start with a photo-only rest day.", itinerary: "recordings", output: "preview", showImport: true, showBackup: true, showRestore: true },
+    { label: "Split days", title: "Step 2: Split Days & Rest Days", guide: "Pick a day, click the map or elevation profile to set boundaries, rename or recolour days, and insert rest days.", itinerary: "days", output: "preview" },
+    { label: "Places", title: "Step 3: Places & Visits", guide: "Review imported GPX waypoints, add stops by coordinates or map click, choose which places print on posters, and record overnight stays.", assets: "places", output: "preview" },
+    { label: "Photos", title: "Step 4: Photos & Crops", guide: "Assign photos to the full trip or a specific day, pick a lead photo, adjust crops, and approve photo GPS pins.", assets: "photos", output: "preview" },
+    { label: "Style & export", title: "Step 5: Style, Labels & Export", guide: "Use the Poster studio on the right to customize title, colours, and map labels, group days, and download JPG, PNG, or ZIP posters.", output: "full", showBackup: true }
   ];
   var project = newProject();
   var revision = 0;
@@ -1932,10 +1935,15 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
       }
     }
   }
+  function activeStep() {
+    return steps[step - 1];
+  }
   function showItinerary() {
-    const section = mode === "full" ? "all" : step === 1 ? "recordings" : step === 2 ? "days" : undefined;
-    if (!section)
+    const section = mode === "full" ? "all" : activeStep().itinerary;
+    if (!section) {
+      itinerary.replaceChildren();
       return;
+    }
     mountItinerary(itinerary, project, () => {
       showAssets();
       showOutput();
@@ -1943,33 +1951,35 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     }, mergeDay, section);
   }
   function showAssets() {
-    const section = mode === "full" ? "all" : step === 3 ? "places" : step === 4 ? "photos" : undefined;
-    if (!section)
+    const section = mode === "full" ? "all" : activeStep().assets;
+    if (!section) {
+      assets.replaceChildren();
       return;
+    }
     mountAssets(assets, project, () => {
       showOutput();
       changed();
     }, section);
   }
   function showOutput() {
-    mountOutput(output, project, changed, mode === "full" || step === 5 ? "full" : "preview");
+    mountOutput(output, project, changed, mode === "full" ? "full" : activeStep().output);
   }
   function syncChrome() {
-    const wizard = mode === "wizard";
+    const wizard = mode === "wizard", current = activeStep();
     document.querySelectorAll("[data-mode]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
     });
     stepper.hidden = wizardHead.hidden = wizardNav.hidden = !wizard;
     tabs.hidden = wizard;
-    importTools.hidden = wizard && step !== 1;
-    backupTools.hidden = wizard && step !== 1 && step !== 5;
-    itinerary.hidden = wizard ? step > 2 : fullTab !== "itinerary";
-    assets.hidden = wizard ? step !== 3 && step !== 4 : fullTab !== "assets";
+    importTools.hidden = wizard && !current.showImport;
+    backupTools.hidden = wizard && !current.showBackup;
+    restoreTools.hidden = wizard && !current.showRestore;
+    itinerary.hidden = wizard ? !current.itinerary : fullTab !== "itinerary";
+    assets.hidden = wizard ? !current.assets : fullTab !== "assets";
     wizardExtra.replaceChildren();
     if (wizard) {
-      const info = steps[step - 1];
-      wizardHeading.textContent = info.title;
-      wizardGuide.textContent = info.guide;
+      wizardHeading.textContent = current.title;
+      wizardGuide.textContent = current.guide;
       document.querySelectorAll("[data-step]").forEach((button) => {
         if (Number(button.dataset.step) === step)
           button.setAttribute("aria-current", "step");
@@ -1994,10 +2004,10 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     showAssets();
     showOutput();
   }
-  function goStep(next, focusHeading = true) {
+  function goStep(next) {
     step = Math.max(1, Math.min(steps.length, next));
     render();
-    if (focusHeading && mode === "wizard")
+    if (mode === "wizard")
       wizardHeading.focus();
   }
   function busy(value) {
