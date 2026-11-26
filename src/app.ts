@@ -110,7 +110,9 @@ function syncChrome() {
     if (step === 5) {
       const tip = document.createElement('p')
       tip.className = 'wizard-tip'
-      tip.textContent = 'Your trip saves automatically in this browser. Download a backup file above if you plan to move browsers or clear site data.'
+      tip.textContent = project.days.length || project.photos.length
+        ? 'Your trip saves automatically in this browser. Download a backup file above if you plan to move browsers or clear site data.'
+        : 'Import a GPX or add a rest day in Step 1 first to preview and export posters.'
       wizardExtra.append(tip)
     }
   }

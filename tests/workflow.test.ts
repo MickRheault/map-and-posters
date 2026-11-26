@@ -453,3 +453,93 @@ test('Step 4 assigns photos, sets lead photo and crop/zoom, approves GPS pin, an
     await Bun.sleep(0)
   } finally { app.dom.window.close() }
 })
+
+test('Step 5 unlocks full Poster Studio, keeps label moves poster-specific, and completes full 5-step wizard export, reload, and backup restore', async()=>{
+  const app=await open(),windows=[app.dom.window]
+  const tmp=await mkdtemp(join(tmpdir(),'wizard-e2e-'))
+  try {
+    // Step 1: Import route + waypoints
+    const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.01,310],[18,98,300],[18,98.03,320],[18,98.05,340]])
+    const waypoints=new File(['<gpx><wpt lat="18" lon="98.01"><name>Farm homestay</name></wpt></gpx>'],'places.gpx',{type:route.type})
+    await app.upload('#file',[route,waypoints])
+
+    // Step 2: Split day and add rest day
+    app.button('Next: Split days')
+    const boundary=app.field('Boundary point')
+    boundary.value='3';boundary.dispatchEvent(new app.dom.window.Event('input'))
+    app.button('Create next day')
+    const days=app.field('Edit day') as HTMLSelectElement
+    app.change(days,days.options[1].value)
+    app.button('Rest day after')
+    app.change(app.field('Day name'),'Pai')
+
+    // Step 3: Curate place + overnight stay
+    app.button('Next: Places')
+    const farm=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='Farm homestay')!
+    farm.open=true
+    farm.querySelector<HTMLInputElement>('input[type=checkbox]')!.click()
+    const farmAgain=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='Farm homestay')!
+    farmAgain.open=true
+    ;(app.field('Overnight stay',farmAgain) as HTMLInputElement).click()
+    Array.from(farmAgain.querySelectorAll('button')).find(b=>b.textContent==='Add visit')!.click()
+
+    // Step 4: Upload photo to rest day and crop
+    app.button('Next: Photos')
+    const target=app.field('Add photos to') as HTMLSelectElement
+    app.change(target,target.options[3].value)
+    const original=await sharp({create:{width:4400,height:2800,channels:3,background:'#a92725'}}).jpeg().toBuffer()
+    await app.upload('#assets input[type=file]',[new File([original],'rest-hero.jpg',{type:'image/jpeg'})])
+    const photoBox=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='rest-hero.jpg')!
+    photoBox.open=true
+    const cropX=app.field('Horizontal crop',photoBox)
+    cropX.value='0.2';cropX.dispatchEvent(new app.dom.window.Event('change'))
+
+    // Step 5: Style, Labels, Collection & Export
+    app.button('Next: Style & export')
+    expect(app.doc.querySelector('[data-step="5"]')?.getAttribute('aria-current')).toBe('step')
+    expect(app.doc.querySelector('#wizard-step-extra')?.textContent).toContain('Download a backup')
+    expect(app.doc.querySelector('#download-poster')).not.toBeNull()
+    expect(app.doc.querySelector('#download-zip')).not.toBeNull()
+    expect(app.doc.querySelector('#poster-style')).not.toBeNull()
+
+    // Move label on Day 1 poster via keyboard and confirm Full trip label stays independent
+    const posterSel=app.doc.querySelector<HTMLSelectElement>('#poster-target')!
+    const day1Value=Array.from(posterSel.options).find(o=>o.value.startsWith('day:'))!.value
+    app.change(posterSel,day1Value)
+    const labelBefore={
+      x:app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('x'),
+      y:app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('y')
+    }
+    app.doc.querySelector<SVGTextElement>('#poster-preview svg [data-label]')!.dispatchEvent(
+      new app.dom.window.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true})
+    )
+    const labelAfter={
+      x:app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('x'),
+      y:app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('y')
+    }
+    expect(Number(labelAfter.y)).toBeGreaterThan(Number(labelBefore.y))
+
+    app.change(app.doc.querySelector<HTMLSelectElement>('#poster-target')!,'trip')
+    const tripLabelY=app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('y')
+    expect(tripLabelY).not.toBe(labelAfter.y)
+
+    // Backup, reload via IndexedDB, restore in fresh wizard session, and verify JPG/PNG/ZIP exports
+    app.button('Download backup')
+    const backupBlob=app.downloads.get('map-and-posters-backup.json')!
+    await until(()=>app.doc.querySelector('#storage-status')?.textContent==='Saved on this device','Autosave failed')
+
+    const reloaded=await open(app.store);windows.push(reloaded.dom.window)
+    reloaded.button('5. Style & export')
+    expect(reloaded.doc.querySelector('#poster-preview svg')?.outerHTML).toBe(app.doc.querySelector('#poster-preview svg')?.outerHTML)
+
+    const fresh=await open();windows.push(fresh.dom.window)
+    await fresh.upload('#restore',[new File([backupBlob],'trip.json',{type:'application/json'})])
+    fresh.button('5. Style & export')
+    expect(fresh.doc.querySelector('#poster-preview svg')?.outerHTML).toBe(app.doc.querySelector('#poster-preview svg')?.outerHTML)
+    await checkDownloads(fresh,tmp)
+  } finally {
+    await Bun.sleep(0)
+    windows.forEach(win=>win.close())
+    await rm(tmp,{recursive:true,force:true})
+  }
+},30000)
