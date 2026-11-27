@@ -46,6 +46,25 @@ export function deleteProjectDay(project: Project, dayId: string) {
   project.recordings = project.recordings.filter(r => usedRecordings.has(r.id))
 }
 
+export function deleteProjectRecording(project: Project, recordingId: string) {
+  const rec = project.recordings.find(r => r.id === recordingId)
+  if (!rec) return
+  project.recordings = project.recordings.filter(r => r.id !== recordingId)
+  const sourceIndex = project.sources.findIndex(s => s.name === rec.name)
+  if (sourceIndex >= 0) project.sources.splice(sourceIndex, 1)
+  for (const visit of project.visits) {
+    if (visit.position?.recordingId === recordingId) delete visit.position
+  }
+  const emptyDays: string[] = []
+  for (const day of project.days) {
+    if (day.rest) continue
+    day.ranges = day.ranges.filter(r => r.recordingId !== recordingId)
+    if (!day.ranges.length) emptyDays.push(day.id)
+  }
+  for (const dayId of emptyDays) deleteProjectDay(project, dayId)
+  if (!project.recordings.length && !project.days.length) delete project.manualOrder
+}
+
 const format = 'map-and-posters'
 const version = 1
 

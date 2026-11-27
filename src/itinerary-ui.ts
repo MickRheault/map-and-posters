@@ -161,9 +161,9 @@ function boundaryEditor(project:Itinerary,left:Day,right:Day|null,commit:()=>voi
   return panel
 }
 
-export function mountItinerary(host:HTMLElement,project:Itinerary,onChange:()=>void,onMerge?:(removed:string,kept:string)=>void,onDelete?:(dayId:string)=>void) {
+export function mountItinerary(host:HTMLElement,project:Itinerary,onChange:()=>void,onMerge?:(removed:string,kept:string)=>void,onDelete?:(dayId:string)=>void,onDeleteRecording?:(recordingId:string)=>void) {
   host.replaceChildren()
-  function commit(){mountItinerary(host,project,onChange,onMerge,onDelete); onChange()}
+  function commit(){mountItinerary(host,project,onChange,onMerge,onDelete,onDeleteRecording); onChange()}
   if(!project.recordings.length && !project.days.length) {
     host.append(button('Add a rest day',()=>{insertRestDay(project,0);commit()}))
     return
@@ -180,7 +180,13 @@ export function mountItinerary(host:HTMLElement,project:Itinerary,onChange:()=>v
     const down=button('↓',()=>{moveRecording(project,i,1);commit()},i===project.recordings.length-1)
     up.setAttribute('aria-label','Move '+rec.name+' earlier')
     down.setAttribute('aria-label','Move '+rec.name+' later')
-    row.append(label,up,down)
+    const del=button('×',()=>{
+      if(onDeleteRecording) onDeleteRecording(rec.id)
+      else project.recordings.splice(i,1)
+      commit()
+    })
+    del.setAttribute('aria-label','Delete '+rec.name)
+    row.append(label,up,down,del)
     const start=rec.track[0]?.[0]?.time
     if(start) row.append(element('small',start))
     const overlaps=project.recordings.slice(0,i).filter(other=>possibleOverlap(rec,other))

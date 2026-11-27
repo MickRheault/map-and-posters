@@ -4,7 +4,7 @@ import { importRecording } from './itinerary'
 import { mountItinerary } from './itinerary-ui'
 import { parseGpx } from './track'
 import { downloadBlob, mountOutput } from './output'
-import { backup, deleteProjectDay, newProject, restore, type Project } from './project'
+import { backup, deleteProjectDay, deleteProjectRecording, newProject, restore, type Project } from './project'
 import { loadProject, saveProject } from './storage'
 import { createWizard } from './wizard'
 
@@ -53,7 +53,7 @@ function mergeDay(removed: string, kept: string) {
 }
 
 function showItinerary() {
-  mountItinerary(itinerary, project, () => { showAssets(); showOutput(); changed() }, mergeDay, id => deleteProjectDay(project, id))
+  mountItinerary(itinerary, project, () => { showAssets(); showOutput(); changed() }, mergeDay, id => deleteProjectDay(project, id), id => deleteProjectRecording(project, id))
 }
 function showAssets() {
   mountAssets(assets, project, () => { showOutput(); changed() })
@@ -140,6 +140,7 @@ const wizard = createWizard(wizardDialog, {
   importGpx: importGpxFiles,
   downloadBackup,
   restoreBackup: restoreBackupFile,
+  deleteRecording: id => deleteProjectRecording(project, id),
   deleteDay: id => deleteProjectDay(project, id),
   resetTrip,
   onMutate: () => { changed(); renderEditor() },

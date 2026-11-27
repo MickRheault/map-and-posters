@@ -578,3 +578,36 @@ test('deleting any day (rest or riding) cleans up project state and New trip res
     windows.forEach(w=>w.close())
   }
 })
+
+test('deleting uploaded GPX files works in Wizard Step 1 and Full editor, and Step 2 handles unchecked GPX cleanly', async()=>{
+  const app=await open()
+  try {
+    const dialog=()=>app.doc.querySelector<HTMLDialogElement>('#wizard-dialog')!
+    const a=gpx('west.gpx',[[0,0],[0,0.01],[0,0.02],[0,0.03]])
+    const b=gpx('east.gpx',[[0,5],[0,5.01],[0,5.02],[0,5.03]])
+    await app.upload('#wizard-gpx',[a,b])
+    expect(dialog().querySelectorAll('.wiz-rec')).toHaveLength(2)
+
+    // Uncheck west.gpx and go to Step 2 — Step 2 shows recovery message + Include GPX button
+    dialog().querySelectorAll<HTMLInputElement>('.wiz-rec input[type=checkbox]')[0].click()
+    app.button('Continue')
+    expect(dialog().textContent).toContain('unchecked')
+    Array.from(dialog().querySelectorAll('button')).find(b=>b.textContent==='Include GPX')!.click()
+    expect(dialog().querySelector('.wiz-split-map')).not.toBeNull()
+
+    // Go back to Step 1 and delete west.gpx via its delete button
+    app.button('Back')
+    dialog().querySelector<HTMLButtonElement>('button[aria-label="Delete west.gpx"]')!.click()
+    expect(dialog().querySelectorAll('.wiz-rec')).toHaveLength(1)
+    expect(dialog().querySelector('.wiz-rec')?.textContent).toContain('east.gpx')
+
+    // Switch to Full editor and delete east.gpx there as well
+    Array.from(dialog().querySelectorAll('button')).find(b=>b.textContent==='Full editor')!.click()
+    app.doc.querySelector<HTMLButtonElement>('#itinerary button[aria-label="Delete east.gpx"]')!.click()
+    expect(app.doc.querySelectorAll('#itinerary .recording-row')).toHaveLength(0)
+    expect(app.doc.querySelector('#output')?.innerHTML).toBe('')
+  } finally {
+    await Bun.sleep(0)
+    app.dom.window.close()
+  }
+})

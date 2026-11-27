@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { backup, newProject, restore } from '../src/project'
+import { backup, deleteProjectRecording, newProject, restore } from '../src/project'
 import { importRecording, insertRestDay } from '../src/itinerary'
 import { addPlace } from '../src/assets'
 
@@ -27,4 +27,15 @@ test('invalid versions, damaged recording ranges and dangling visits are rejecte
   p.days[0].ranges[0].end=0
   p.visits[0].dayId='absent'
   expect(()=>restore(backup(p))).toThrow()
+})
+
+test('deleteProjectRecording removes the GPX, its orphaned days and source, while keeping rest days valid',()=>{
+  const p=example()
+  const recId=p.recordings[0].id
+  deleteProjectRecording(p,recId)
+  expect(p.recordings).toHaveLength(0)
+  expect(p.sources).toHaveLength(0)
+  expect(p.days).toHaveLength(1)
+  expect(p.days[0].rest).toBe(true)
+  expect(restore(backup(p))).toEqual(p)
 })

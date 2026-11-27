@@ -11,6 +11,7 @@ export interface WizardHooks {
   importGpx: (files: File[]) => Promise<string>
   downloadBackup: () => void
   restoreBackup: (file: File) => Promise<string>
+  deleteRecording: (recordingId: string) => void
   deleteDay: (dayId: string) => void
   resetTrip: () => void
   onMutate: () => void
@@ -229,17 +230,20 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
         const overlaps = project.recordings.slice(0, i).filter(other => possibleOverlap(rec, other))
         if (overlaps.length) row.append(el('span', 'Possible overlap', 'wiz-warn'))
 
+        const controls = el('div', '', 'wiz-arrows')
         if (project.recordings.length > 1) {
-          const arrows = el('div', '', 'wiz-arrows')
           const up = btn('↑', () => { moveRecording(project, i, -1); mutate() }, 'wiz-icon')
           up.disabled = i === 0
           up.setAttribute('aria-label', 'Move ' + rec.name + ' earlier')
           const down = btn('↓', () => { moveRecording(project, i, 1); mutate() }, 'wiz-icon')
           down.disabled = i === project.recordings.length - 1
           down.setAttribute('aria-label', 'Move ' + rec.name + ' later')
-          arrows.append(up, down)
-          row.append(arrows)
+          controls.append(up, down)
         }
+        const del = btn('×', () => { hooks.deleteRecording(rec.id); setStatus(''); mutate() }, 'wiz-icon wiz-danger')
+        del.setAttribute('aria-label', 'Delete ' + rec.name)
+        controls.append(del)
+        row.append(controls)
         list.append(row)
       })
       content.append(list)
@@ -306,7 +310,21 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     const visible = ranges.filter(r => sources.get(r.recordingId)?.included)
     const segments: Point[][] = visible.map(r => sources.get(r.recordingId)!.track[r.segment].slice(r.start, r.end + 1))
     if (!segments.length) {
-      content.append(deleteBtn())
+      const box = el('div', '', 'wiz-empty-day')
+      box.append(el('p', 'This day’s GPX is unchecked in Step 1.', 'wiz-meta'))
+      const row = el('div', '', 'wiz-inline-tools')
+      row.append(
+        btn('Include GPX', () => {
+          for (const r of ranges) {
+            const rec = sources.get(r.recordingId)
+            if (rec) rec.included = true
+          }
+          mutate()
+        }, 'wiz-ghost'),
+        deleteBtn(),
+      )
+      box.append(row)
+      content.append(box)
       return
     }
 
