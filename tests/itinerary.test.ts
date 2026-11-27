@@ -1,5 +1,5 @@
 import {expect,test} from 'bun:test'
-import {appendRecording,combinedRanges,dayName,dayTrack,importRecording,insertRestDay,joinDays,moveRecording,possibleOverlap,removeDay,setBoundary,type Itinerary} from '../src/itinerary'
+import {appendRecording,clampMapView,clientToMapPoint,combinedRanges,dayName,dayTrack,importRecording,insertRestDay,joinDays,moveRecording,panMapView,pickBoundaryPasses,possibleOverlap,removeDay,setBoundary,zoomMapView,type Itinerary,type MapSample} from '../src/itinerary'
 import {mountItinerary} from '../src/itinerary-ui'
 import {layout} from '../src/track'
 
@@ -127,4 +127,93 @@ test('removeDay deletes either a rest day or a riding day and marks manualOrder'
   removeDay(p,p.days[0])
   expect(p.days).toHaveLength(1)
   expect(p.manualOrder).toBe(true)
+})
+
+test('pickBoundaryPasses collapses switchback and GPS jitter into one visit while preserving real out-and-backs',()=>{
+  // Dense noisy switchback / town zigzag around (200, 100) followed by a genuine return pass later
+  const noisy:MapSample[]=[
+    {x:100,y:100,km:0,run:0},
+    {x:180,y:100,km:10,run:0},
+    {x:199,y:100,km:12.0,run:0},
+    {x:204,y:102,km:12.1,run:0},
+    {x:200.2,y:100,km:12.2,run:0},
+    {x:205,y:97,km:12.3,run:0},
+    {x:199.5,y:101,km:12.4,run:0},
+    {x:206,y:103,km:12.5,run:0},
+    {x:201,y:99.5,km:12.6,run:0},
+    {x:240,y:100,km:20,run:0},
+    {x:320,y:100,km:40,run:0},
+    // Genuine return visit with its own micro-jitter
+    {x:201,y:100.5,km:60.0,run:0},
+    {x:204,y:98,km:60.1,run:0},
+    {x:200.1,y:100,km:60.2,run:0},
+    {x:196,y:102,km:60.3,run:0},
+    {x:199,y:100,km:60.4,run:0},
+    {x:120,y:100,km:75,run:0},
+  ]
+  // Two genuine visits (indices 4 and 13), not 6 noisy micro-increments
+  expect(pickBoundaryPasses(noisy,{x:200,y:100})).toEqual([4,13])
+
+  // Single visit with jitter only -> collapses to a single best sample
+  expect(pickBoundaryPasses(noisy.slice(0,11),{x:200,y:100})).toEqual([4])
+
+  // Short genuine out-and-back spur that leaves the neighborhood (> 12 SVG units) still returns 2 passes
+  const shortSpur:MapSample[]=[
+    {x:150,y:100,km:0,run:0},
+    {x:200,y:100,km:5,run:0},
+    {x:216,y:100,km:6,run:0},
+    {x:200,y:100,km:7,run:0},
+    {x:150,y:100,km:12,run:0},
+  ]
+  expect(pickBoundaryPasses(shortSpur,{x:200,y:100})).toEqual([1,3])
+
+  // Zooming in tightens hit/leave margins proportionally so close parallel passes can be resolved intentionally
+  const tightLoop:MapSample[]=[
+    {x:180,y:100,km:0,run:0},
+    {x:200,y:100,km:1,run:0},
+    {x:205,y:100,km:1.5,run:0},
+    {x:200,y:100,km:2,run:0},
+    {x:180,y:100,km:3,run:0},
+  ]
+  expect(pickBoundaryPasses(tightLoop,{x:200,y:100},{zoom:1})).toEqual([1])
+  expect(pickBoundaryPasses(tightLoop,{x:200,y:100},{zoom:4})).toEqual([1,3])
+})
+
+test('Full editor map click collapses noisy switchbacks along one visit instead of showing Pass 1..N',()=>{
+  const p=empty()
+  // Route with tiny zigzag wiggles near lon=0.5 (all within ~5 SVG units)
+  const pts=[
+    [18,0],[18,0.48],[18.001,0.50],[17.999,0.508],[18.0005,0.501],
+    [17.998,0.509],[18.0002,0.5005],[18,0.51],[18,1]
+  ].map(([lat,lon])=>`<trkpt lat="${lat}" lon="${lon}"></trkpt>`).join('')
+  importRecording(p,'<gpx><trk><trkseg>'+pts+'</trkseg></trk></gpx>','switchback')
+  const host=document.createElement('div')
+  mountItinerary(host,p,()=>{})
+  const map=host.querySelector<SVGSVGElement>('svg')!
+  Object.defineProperty(map,'getBoundingClientRect',{value:()=>({left:0,top:0,width:400,height:200})})
+  map.dispatchEvent(new MouseEvent('click',{clientX:200,clientY:100}))
+  const passes=Array.from(host.querySelectorAll('select')).find(select=>select.options[0]?.text.startsWith('Pass '))!
+  expect(passes.options.length).toBe(1)
+  expect(passes.closest('label')!.hidden).toBe(true)
+})
+
+test('map viewport helpers clamp zoom/pan bounds, anchor zoom, and map client clicks accurately',()=>{
+  const base={zoom:1,x:0,y:0}
+  const zoomed=zoomMapView(base,2,{x:200,y:100})
+  expect(zoomed).toEqual({zoom:2,x:100,y:50})
+  // Anchor near top-right stays under the cursor while clamping to bounds
+  const corner=zoomMapView(base,4,{x:350,y:20})
+  expect(corner.zoom).toBe(4)
+  expect(corner.x).toBeGreaterThanOrEqual(0)
+  expect(corner.x).toBeLessThanOrEqual(300)
+  expect(corner.y).toBeGreaterThanOrEqual(0)
+  expect(corner.y).toBeLessThanOrEqual(150)
+  // Panning shifts viewBox opposite to drag delta and clamps within [0, 400-vw] x [0, 200-vh]
+  const panned=panMapView(zoomed,-80,40,{width:400,height:200})
+  expect(panned).toEqual({zoom:2,x:140,y:30})
+  expect(clampMapView({zoom:2,x:-50,y:500})).toEqual({zoom:2,x:0,y:100})
+  // Click at center of a zoomed & panned SVG maps to center of the active viewBox
+  const pt=clientToMapPoint({left:10,top:20,width:400,height:200},panned,210,120)
+  expect(pt.x).toBeCloseTo(240,5)
+  expect(pt.y).toBeCloseTo(80,5)
 })

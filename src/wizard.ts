@@ -1,7 +1,29 @@
+import {
+  applyAiSplitPlan,
+  buildAiSplitPlan,
+  clearAiConfig,
+  collectRouteSamples,
+  DEFAULT_MODELS,
+  loadAiConfig,
+  saveAiConfig,
+  selectPlanPass,
+  type AiProvider,
+  type AiSplitPlan,
+} from './ai-split'
 import { addPlace, readCoordinates, readPhoto, type Photo, type Place } from './assets'
 import { visitCandidates } from './assets-ui'
-import { combinedRanges, dayName, insertRestDay, moveRecording, possibleOverlap, setBoundary, type Day, type PointRef } from './itinerary'
+import { MAX_MAP_ZOOM, clampMapView, clientToMapPoint, combinedRanges, dayName, insertRestDay, moveRecording, panMapView, pickBoundaryPasses, possibleOverlap, setBoundary, zoomMapView, type Day, type MapView, type PointRef } from './itinerary'
 import { downloadBlob, posterFiles, rasterize, slug, wireLabelEditing, zipFiles } from './output'
+import {
+  getGooglePlacesKey,
+  resolvePlace,
+  searchPlaces,
+  setGooglePlacesKey,
+  snapPlaceToRoute,
+  trackBounds,
+  type GeoBounds,
+  type PlaceResult,
+} from './places-search'
 import { availablePosters, renderPoster } from './poster'
 import type { Project } from './project'
 import { layout, type Point } from './track'
@@ -26,7 +48,7 @@ const STEP_TITLES = [
   'Ready to download',
 ] as const
 
-type Sample = PointRef & { x: number, y: number, km: number, run: number }
+type Sample = PointRef & { lat: number, lon: number, x: number, y: number, km: number, run: number }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, text = '', className = '') {
   const node = document.createElement(tag)
@@ -84,10 +106,148 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
   let step = 1
   let activeDayId = ''
   let showAddPlace = false
+  let showStep2Search = false
   let photoDayId = ''
   let expandedCropPhotoId = ''
   let statusText = ''
   let busy = false
+  let searchCleanups: (() => void)[] = []
+  let aiOpen = false
+  let aiSettingsOpen: boolean | null = null
+  let aiPrompt = ''
+  let aiBusy = false
+  let aiError = ''
+  let aiPlan: AiSplitPlan | null = null
+
+  function cancelSearches() {
+    for (const stop of searchCleanups) stop()
+    searchCleanups = []
+  }
+
+  function wirePlaceAutocomplete(options: {
+    input: HTMLInputElement
+    list: HTMLUListElement
+    bounds: GeoBounds | null
+    searchOnEnter?: boolean
+    onSelect: (place: PlaceResult) => void
+    onError: (message: string) => void
+    onEmpty?: () => void
+    onClear?: () => void
+  }) {
+    const { input, list, bounds, searchOnEnter, onSelect, onError, onEmpty, onClear } = options
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let controller: AbortController | undefined
+    let sessionToken = crypto.randomUUID()
+
+    function clearList() {
+      list.replaceChildren()
+      list.hidden = true
+    }
+
+    function stop() {
+      if (timer !== undefined) { clearTimeout(timer); timer = undefined }
+      if (controller) { controller.abort(); controller = undefined }
+    }
+    searchCleanups.push(stop)
+
+    async function runSearch(raw: string) {
+      stop()
+      const q = raw.trim()
+      if (q.length < 2) {
+        clearList()
+        onClear?.()
+        return
+      }
+      const current = new AbortController()
+      controller = current
+      const outcome = await searchPlaces(q, {
+        bounds,
+        sessionToken,
+        signal: current.signal,
+      })
+      if (outcome.aborted || controller !== current || !input.isConnected || !list.isConnected) return
+      if (outcome.error) {
+        clearList()
+        onError(outcome.error)
+        return
+      }
+      if (!outcome.suggestions.length) {
+        clearList()
+        onEmpty?.()
+        return
+      }
+      onClear?.()
+      list.replaceChildren(...outcome.suggestions.map(suggestion => {
+        const item = el('li')
+        const pick = el('button', '', 'wiz-suggestion')
+        pick.type = 'button'
+        pick.append(el('strong', suggestion.name))
+        if (suggestion.subtitle) pick.append(el('span', suggestion.subtitle))
+        pick.onclick = async () => {
+          pick.disabled = true
+          const resolved = await resolvePlace(suggestion, { sessionToken, signal: current.signal })
+          if (resolved.aborted || !input.isConnected) return
+          if (resolved.error || !resolved.place) {
+            pick.disabled = false
+            onError(resolved.error || 'Could not load coordinates for this place.')
+            return
+          }
+          sessionToken = crypto.randomUUID()
+          clearList()
+          onSelect(resolved.place)
+        }
+        item.append(pick)
+        return item
+      }))
+      list.hidden = false
+    }
+
+    input.addEventListener('input', () => {
+      if (timer !== undefined) { clearTimeout(timer); timer = undefined }
+      if (input.value.trim().length < 2) {
+        stop()
+        clearList()
+        onClear?.()
+        return
+      }
+      timer = setTimeout(() => { void runSearch(input.value) }, 180)
+    })
+
+    input.addEventListener('keydown', e => {
+      if (e.isComposing) return
+      if (e.key === 'ArrowDown' && !list.hidden) {
+        e.preventDefault()
+        list.querySelector<HTMLButtonElement>('button')?.focus()
+      } else if (e.key === 'Escape' && !list.hidden) {
+        e.preventDefault()
+        e.stopPropagation()
+        clearList()
+      } else if (e.key === 'Enter' && searchOnEnter) {
+        e.preventDefault()
+        void runSearch(input.value)
+      }
+    })
+
+    list.addEventListener('keydown', e => {
+      const buttons = Array.from(list.querySelectorAll<HTMLButtonElement>('button'))
+      const idx = buttons.indexOf(document.activeElement as HTMLButtonElement)
+      if (e.key === 'ArrowDown' && buttons.length) {
+        e.preventDefault()
+        buttons[(idx + 1) % buttons.length].focus()
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        if (idx <= 0) input.focus()
+        else buttons[idx - 1].focus()
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        clearList()
+        input.focus()
+      }
+    })
+
+    return { clearList, stop }
+  }
 
   function isOpen() {
     return dialog.hasAttribute('open')
@@ -104,6 +264,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
 
   function hide() {
     if (!isOpen()) return
+    cancelSearches()
     if (typeof dialog.close === 'function') dialog.close('exit')
     else {
       dialog.removeAttribute('open')
@@ -112,6 +273,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
   }
 
   dialog.addEventListener('close', () => {
+    cancelSearches()
     dialog.returnValue = ''
     hooks.onExit()
   })
@@ -256,11 +418,309 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     content.append(tools)
   }
 
+  function renderAiSplitBox(project: Project): HTMLElement | null {
+    if (collectRouteSamples(project).samples.length < 3) return null
+
+    const config = loadAiConfig()
+    const detailsEl = el('details', '', 'wiz-ai')
+    detailsEl.open = aiOpen
+    detailsEl.addEventListener('toggle', () => {
+      if (!detailsEl.isConnected) return
+      aiOpen = detailsEl.open
+    })
+
+    const summary = el('summary', 'Ask AI to split days', 'wiz-ai-trigger')
+    detailsEl.append(summary)
+
+    const panel = el('div', '', 'wiz-ai-panel')
+
+    const promptField = el('div', '', 'wiz-ai-field')
+    const promptLabel = el('label', 'Describe your days')
+    promptLabel.htmlFor = 'wiz-ai-prompt'
+    const hint = el('p', 'Stop names are geocoded onto your GPX track. Nothing changes until you click Apply plan.', 'wiz-ai-hint')
+    hint.id = 'wiz-ai-hint'
+    const promptInput = el('textarea', '', 'wiz-input wiz-ai-prompt')
+    promptInput.id = 'wiz-ai-prompt'
+    promptInput.rows = 2
+    promptInput.placeholder = 'e.g. Day 1 finished in Pai, Day 2 was a rest day in Pai'
+    promptInput.setAttribute('aria-describedby', 'wiz-ai-hint')
+    promptInput.value = aiPrompt
+    promptInput.disabled = aiBusy
+    promptInput.oninput = () => { aiPrompt = promptInput.value }
+    promptField.append(promptLabel, hint, promptInput)
+    panel.append(promptField)
+
+    const settingsEl = el('details', '', 'wiz-ai-settings')
+    const needsSetup = !config.apiKey && !config.endpoint
+    settingsEl.open = aiSettingsOpen ?? needsSetup
+    settingsEl.addEventListener('toggle', () => {
+      if (!settingsEl.isConnected) return
+      aiSettingsOpen = settingsEl.open
+    })
+    settingsEl.append(el('summary', 'AI & geocoding settings'))
+
+    const grid = el('div', '', 'wiz-ai-settings-grid')
+
+    const providerField = el('div', '', 'wiz-ai-field')
+    const providerLabel = el('label', 'Provider')
+    providerLabel.htmlFor = 'wiz-ai-provider'
+    const providerSel = el('select', '', 'wiz-select-sm')
+    providerSel.id = 'wiz-ai-provider'
+    providerSel.disabled = aiBusy
+    for (const [val, labelText] of [['openai', 'OpenAI-compatible'], ['gemini', 'Gemini']] as const) {
+      const opt = el('option', labelText)
+      opt.value = val
+      if (config.provider === val) opt.selected = true
+      providerSel.add(opt)
+    }
+    providerField.append(providerLabel, providerSel)
+
+    const modelField = el('div', '', 'wiz-ai-field')
+    const modelLabel = el('label', 'Model')
+    modelLabel.htmlFor = 'wiz-ai-model'
+    const modelInput = el('input', '', 'wiz-input')
+    modelInput.id = 'wiz-ai-model'
+    modelInput.type = 'text'
+    modelInput.value = config.model
+    modelInput.disabled = aiBusy
+    modelField.append(modelLabel, modelInput)
+
+    const keyField = el('div', '', 'wiz-ai-field wiz-ai-span')
+    const keyLabel = el('label', 'API key')
+    keyLabel.htmlFor = 'wiz-ai-key'
+    const keyInput = el('input', '', 'wiz-input')
+    keyInput.id = 'wiz-ai-key'
+    keyInput.type = 'password'
+    keyInput.autocomplete = 'off'
+    keyInput.placeholder = 'Stored only in this browser'
+    keyInput.value = config.apiKey
+    keyInput.disabled = aiBusy
+    keyField.append(keyLabel, keyInput)
+
+    const endpointField = el('div', '', 'wiz-ai-field wiz-ai-span')
+    const endpointLabel = el('label', 'Custom endpoint (optional)')
+    endpointLabel.htmlFor = 'wiz-ai-endpoint'
+    const endpointInput = el('input', '', 'wiz-input')
+    endpointInput.id = 'wiz-ai-endpoint'
+    endpointInput.type = 'url'
+    endpointInput.placeholder = 'Blank for provider default, or https://… / http://localhost:…'
+    endpointInput.value = config.endpoint
+    endpointInput.disabled = aiBusy
+    endpointField.append(endpointLabel, endpointInput)
+
+    const placesField = el('div', '', 'wiz-ai-field wiz-ai-span')
+    const placesLabel = el('label', 'Google Places key (optional)')
+    placesLabel.htmlFor = 'wiz-ai-places-key'
+    const placesInput = el('input', '', 'wiz-input')
+    placesInput.id = 'wiz-ai-places-key'
+    placesInput.type = 'password'
+    placesInput.autocomplete = 'off'
+    placesInput.placeholder = 'Optional — uses free OSM Photon if blank'
+    placesInput.value = config.googlePlacesKey
+    placesInput.disabled = aiBusy
+    placesField.append(placesLabel, placesInput)
+
+    const persistConfig = () => {
+      const nextProvider: AiProvider = providerSel.value === 'gemini' ? 'gemini' : 'openai'
+      return saveAiConfig({
+        provider: nextProvider,
+        model: modelInput.value,
+        apiKey: keyInput.value,
+        endpoint: endpointInput.value,
+        googlePlacesKey: placesInput.value,
+      })
+    }
+
+    providerSel.onchange = () => {
+      const prevDefault = DEFAULT_MODELS[config.provider]
+      const nextProvider: AiProvider = providerSel.value === 'gemini' ? 'gemini' : 'openai'
+      if (!modelInput.value.trim() || modelInput.value.trim() === prevDefault) {
+        modelInput.value = DEFAULT_MODELS[nextProvider]
+      }
+      try {
+        persistConfig()
+        aiError = ''
+      } catch (e) {
+        aiError = (e as Error).message
+      }
+      render()
+    }
+    for (const inputEl of [modelInput, keyInput, endpointInput, placesInput]) {
+      inputEl.onchange = () => {
+        try {
+          persistConfig()
+          aiError = ''
+        } catch (e) {
+          aiError = (e as Error).message
+          render()
+        }
+      }
+    }
+
+    grid.append(providerField, modelField, keyField, endpointField, placesField)
+    const settingsFoot = el('div', '', 'wiz-ai-settings-foot')
+    settingsFoot.append(
+      el('span', 'Keys stay in localStorage and are never saved in trip backups.', 'wiz-ai-hint'),
+      btn('Clear keys', () => {
+        clearAiConfig()
+        aiError = ''
+        aiSettingsOpen = true
+        render()
+      }, 'wiz-link wiz-danger'),
+    )
+    settingsEl.append(grid, settingsFoot)
+    panel.append(settingsEl)
+
+    const actions = el('div', '', 'wiz-ai-actions')
+    const suggestBtn = btn(aiBusy ? 'Planning split…' : 'Suggest split plan', async () => {
+      aiPrompt = promptInput.value
+      let savedConfig
+      try {
+        savedConfig = persistConfig()
+      } catch (e) {
+        aiError = (e as Error).message
+        render()
+        return
+      }
+      aiBusy = true
+      aiError = ''
+      aiOpen = true
+      render()
+      try {
+        const plan = await buildAiSplitPlan(aiPrompt, project, savedConfig)
+        aiPlan = plan
+        aiSettingsOpen = false
+      } catch (e) {
+        aiPlan = null
+        aiError = e instanceof Error ? e.message : 'Could not build an AI split plan.'
+      } finally {
+        aiBusy = false
+        render()
+        const focusTarget = dialog.querySelector<HTMLElement>('.wiz-ai-pass-select')
+          || dialog.querySelector<HTMLElement>('#wiz-ai-apply')
+        if (aiPlan && focusTarget && !focusTarget.hasAttribute('disabled')) focusTarget.focus()
+      }
+    }, 'wiz-ghost')
+    suggestBtn.id = 'wiz-ai-generate'
+    suggestBtn.disabled = aiBusy
+    actions.append(suggestBtn)
+    panel.append(actions)
+
+    if (aiError) {
+      const errEl = el('p', aiError, 'wiz-ai-error')
+      errEl.id = 'wiz-ai-error'
+      errEl.setAttribute('role', 'alert')
+      panel.append(errEl)
+    }
+
+    if (aiPlan) {
+      const plan = aiPlan
+      const review = el('div', '', 'wiz-ai-review')
+      const head = el('div', '', 'wiz-ai-review-head')
+      head.append(el('strong', 'Proposed split plan'), el('span', plan.totalKm.toFixed(1) + ' km total', 'wiz-meta'))
+      review.append(head)
+
+      if (plan.errors.length) {
+        const errBox = el('div', '', 'wiz-ai-error')
+        errBox.setAttribute('role', 'alert')
+        for (const msg of plan.errors) errBox.append(el('p', msg))
+        review.append(errBox)
+      }
+
+      const list = el('ol', '', 'wiz-ai-plan')
+      list.setAttribute('role', 'list')
+      plan.days.forEach((pd, idx) => {
+        const item = el('li', '', 'wiz-ai-day')
+        const main = el('div', '', 'wiz-ai-day-main')
+        const title = 'Day ' + pd.dayIndex + (pd.kind === 'rest' ? ' · Rest day' : '') + (pd.name && pd.name !== 'Rest day' ? ' · ' + pd.name : '')
+        main.append(el('strong', title))
+
+        const detailsParts: string[] = []
+        if (pd.kind === 'ride') {
+          detailsParts.push(pd.km.toFixed(1) + ' km')
+          if (pd.split?.resolved) {
+            const chosen = pd.split.candidates[pd.split.selectedPassIndex]
+            const distNote = chosen ? ' (' + chosen.distanceKm.toFixed(1) + ' km from track)' : ''
+            detailsParts.push('Ends at ' + pd.split.resolved.name + distNote)
+          } else if (pd.inferredRemainder) {
+            detailsParts.push('Remainder of route')
+          } else if (pd.split?.error) {
+            detailsParts.push(pd.split.error)
+          }
+        }
+        if (detailsParts.length) main.append(el('span', detailsParts.join(' · '), 'wiz-meta'))
+        if (pd.overnight?.resolved) {
+          main.append(el('span', 'Overnight: ' + pd.overnight.resolved.name, 'wiz-ai-badge'))
+        } else if (pd.overnight?.error) {
+          main.append(el('span', pd.overnight.error, 'wiz-warn'))
+        }
+        item.append(main)
+
+        if (pd.split?.ambiguous && pd.split.candidates.length > 1) {
+          const passRow = el('div', '', 'wiz-ai-pass-row')
+          const placeLabel = pd.split.resolved?.name || pd.split.query
+          passRow.append(el('span', 'Passed ' + pd.split.candidates.length + ' times', 'wiz-warn'))
+          const selectId = 'wiz-ai-pass-' + idx
+          const lbl = el('label', 'Confirm pass for ' + placeLabel)
+          lbl.htmlFor = selectId
+          const sel = el('select', '', 'wiz-select-sm wiz-ai-pass-select')
+          sel.id = selectId
+          pd.split.candidates.forEach((cand, cIdx) => {
+            const opt = el('option', 'Pass ' + (cIdx + 1) + ' · ' + cand.trackKm.toFixed(1) + ' km')
+            opt.value = String(cIdx)
+            if (cIdx === pd.split!.selectedPassIndex) opt.selected = true
+            sel.add(opt)
+          })
+          sel.onchange = () => {
+            aiPlan = selectPlanPass(plan, pd.id, Number(sel.value))
+            render()
+          }
+          passRow.append(lbl, sel)
+          item.append(passRow)
+        }
+
+        list.append(item)
+      })
+      review.append(list)
+
+      const reviewActions = el('div', '', 'wiz-ai-review-actions')
+      const applyBtn = btn('Apply plan', () => {
+        try {
+          applyAiSplitPlan(project, plan)
+          activeDayId = project.days[0]?.id || ''
+          aiPlan = null
+          aiError = ''
+          aiOpen = false
+          setStatus('Applied AI split plan (' + project.days.length + ' days).')
+          mutate()
+        } catch (e) {
+          aiError = e instanceof Error ? e.message : 'Could not apply split plan.'
+          render()
+        }
+      }, 'wiz-primary')
+      applyBtn.id = 'wiz-ai-apply'
+      applyBtn.disabled = !plan.canApply
+      const discardBtn = btn('Discard', () => {
+        aiPlan = null
+        aiError = ''
+        render()
+      }, 'wiz-link')
+      discardBtn.id = 'wiz-ai-discard'
+      reviewActions.append(applyBtn, discardBtn)
+      review.append(reviewActions)
+      panel.append(review)
+    }
+
+    detailsEl.append(panel)
+    return detailsEl
+  }
+
   function renderStep2(project: Project) {
     if (!project.days.length) {
       content.append(btn('+ Rest day', () => {
         const rest = insertRestDay(project, 0)
         activeDayId = rest.id
+        aiPlan = null
         mutate()
       }, 'wiz-ghost'))
       return
@@ -279,6 +739,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     pills.append(btn('+ Rest day', () => {
       const rest = insertRestDay(project, index + 1)
       activeDayId = rest.id
+      aiPlan = null
       mutate()
     }, 'wiz-pill-add'))
     content.append(pills)
@@ -287,6 +748,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       hooks.deleteDay(day.id)
       const next = project.days[Math.min(index, project.days.length - 1)]
       activeDayId = next?.id || ''
+      aiPlan = null
       setStatus('')
       mutate()
     }, 'wiz-link wiz-danger')
@@ -302,6 +764,8 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       nameInput.onchange = () => { day.name = nameInput.value.trim(); mutate() }
       restRow.append(nameInput, deleteBtn())
       content.append(restRow)
+      const aiBox = renderAiSplitBox(project)
+      if (aiBox) content.append(aiBox)
       return
     }
 
@@ -334,8 +798,10 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     const samples: Sample[] = []
     bounds.lines.forEach((line, run) => {
       const r = visible[run]
+      const raw = segments[run]
       line.forEach((p, i) => samples.push({
         recordingId: r.recordingId, segment: r.segment, point: r.start + i, run, km: p.km,
+        lat: raw[i].lat, lon: raw[i].lon,
         x: projectAxis(p.x, (bounds.east + bounds.west) / 2, 200),
         y: projectAxis(-p.y, -(bounds.north + bounds.south) / 2, 100),
       }))
@@ -346,10 +812,37 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       const actions = el('div', '', 'wiz-inline-tools')
       actions.append(deleteBtn())
       content.append(actions)
+      const aiBox = renderAiSplitBox(project)
+      if (aiBox) content.append(aiBox)
       return
     }
 
-    const map = svgEl('svg', { viewBox: '0 0 400 200', class: 'wiz-split-map', 'aria-label': 'Choose a boundary on the recorded route' })
+    const mapWrap = el('div', '', 'wiz-map-wrap')
+    const map = svgEl('svg', { viewBox: '0 0 400 200', class: 'wiz-split-map', role: 'img', 'aria-label': 'Choose a boundary on the recorded route' })
+    const zoomControls = el('div', '', 'wiz-map-controls')
+    zoomControls.setAttribute('role', 'group')
+    zoomControls.setAttribute('aria-label', 'Map zoom')
+    let view: MapView = { zoom: 1, x: 0, y: 0 }
+    const fmt = (n: number) => String(Number(n.toFixed(2)))
+    const zoomOutBtn = btn('-', () => {
+      const anchor = { x: view.x + 200 / view.zoom, y: view.y + 100 / view.zoom }
+      view = zoomMapView(view, view.zoom / 2, anchor)
+      applyView()
+    }, 'wiz-map-btn')
+    zoomOutBtn.setAttribute('aria-label', 'Zoom out')
+    const zoomInBtn = btn('+', () => {
+      const anchor = { x: view.x + 200 / view.zoom, y: view.y + 100 / view.zoom }
+      view = zoomMapView(view, view.zoom * 2, anchor)
+      applyView()
+    }, 'wiz-map-btn')
+    zoomInBtn.setAttribute('aria-label', 'Zoom in')
+    const resetZoomBtn = btn('Reset', () => {
+      view = { zoom: 1, x: 0, y: 0 }
+      applyView()
+    }, 'wiz-map-btn wiz-map-reset')
+    zoomControls.append(zoomOutBtn, zoomInBtn, resetZoomBtn)
+    mapWrap.append(map, zoomControls)
+
     const slider = el('input', '', 'wiz-slider')
     slider.type = 'range'
     slider.min = '1'
@@ -365,14 +858,32 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     let split = Math.floor(samples.length / 2)
     const xy = (q: Sample) => q.x.toFixed(1) + ',' + q.y.toFixed(1)
 
+    function applyView() {
+      const vw = 400 / view.zoom
+      const vh = 200 / view.zoom
+      map.setAttribute('viewBox', `${fmt(view.x)} ${fmt(view.y)} ${fmt(vw)} ${fmt(vh)}`)
+      map.classList.toggle('is-zoomed', view.zoom > 1)
+      zoomOutBtn.disabled = view.zoom <= 1
+      resetZoomBtn.disabled = view.zoom <= 1
+      zoomInBtn.disabled = view.zoom >= MAX_MAP_ZOOM
+      const strokeWidth = (3.5 / view.zoom).toFixed(2)
+      for (const path of map.querySelectorAll('path')) path.setAttribute('stroke-width', strokeWidth)
+      const marker = map.querySelector('circle')
+      if (marker) {
+        marker.setAttribute('r', (5.5 / view.zoom).toFixed(2))
+        marker.setAttribute('stroke-width', (2.5 / view.zoom).toFixed(2))
+      }
+    }
+
     function draw() {
       slider.value = String(split)
       const chosen = samples[split]
       readout.textContent = chosen.km.toFixed(1) + ' km  ·  ' + (bounds.km - chosen.km).toFixed(1) + ' km'
       map.replaceChildren()
       let path = '', prevColor = '', prevRun = -1
+      const strokeWidth = (3.5 / view.zoom).toFixed(2)
       const flush = () => {
-        if (path) map.prepend(svgEl('path', { fill: 'none', stroke: prevColor, 'stroke-width': '3.5', 'stroke-linejoin': 'round', 'stroke-linecap': 'round', d: path }))
+        if (path) map.prepend(svgEl('path', { fill: 'none', stroke: prevColor, 'stroke-width': strokeWidth, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', d: path }))
       }
       for (let i = 0; i < samples.length; i++) {
         const p = samples[i], color = i <= split ? day.color : '#8b948c'
@@ -386,26 +897,27 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
         prevColor = color
       }
       flush()
-      map.append(svgEl('circle', { cx: String(chosen.x), cy: String(chosen.y), r: '5.5', fill: '#fff', stroke: '#173b33', 'stroke-width': '2.5' }))
+      map.append(svgEl('circle', {
+        cx: String(chosen.x),
+        cy: String(chosen.y),
+        r: (5.5 / view.zoom).toFixed(2),
+        fill: '#fff',
+        stroke: '#173b33',
+        'stroke-width': (2.5 / view.zoom).toFixed(2),
+      }))
+      applyView()
     }
 
     const setSplit = (v: number) => { split = Math.max(1, Math.min(samples.length - 2, v)); draw() }
-    slider.oninput = () => { passes.hidden = true; setSplit(Number(slider.value)) }
-    map.onclick = ev => {
-      const rect = map.getBoundingClientRect()
-      const loc = { x: (ev.clientX - rect.left) / rect.width * 400, y: (ev.clientY - rect.top) / rect.height * 200 }
-      const ds = samples.map(p => Math.hypot(p.x - loc.x, p.y - loc.y))
-      let best = Infinity
-      for (let i = 1; i < ds.length - 1; i++) best = Math.min(best, ds[i])
-      const candidates: number[] = []
-      for (let i = 1; i < ds.length - 1; i++) {
-        if (ds[i] > best + 3) continue
-        const first = i
-        while (i + 1 < ds.length - 1 && samples[i + 1].run === samples[first].run && Math.abs(ds[i + 1] - ds[first]) < 1e-6) i++
-        const before = first === 1 || samples[first - 1].run !== samples[first].run ? Infinity : ds[first - 1]
-        const after = i === ds.length - 2 || samples[i + 1].run !== samples[first].run ? Infinity : ds[i + 1]
-        if (ds[first] <= before && ds[first] <= after) candidates.push(first)
-      }
+    function focusSplitOnMap() {
+      if (view.zoom <= 1) return
+      const chosen = samples[split]
+      const vw = 400 / view.zoom
+      const vh = 200 / view.zoom
+      view = clampMapView({ zoom: view.zoom, x: chosen.x - vw / 2, y: chosen.y - vh / 2 })
+      applyView()
+    }
+    function applyCandidates(candidates: number[]) {
       if (!candidates.length) return
       passes.replaceChildren(...candidates.map((idx, n) => {
         const o = el('option', 'Pass ' + (n + 1) + ' · ' + samples[idx].km.toFixed(1) + ' km')
@@ -415,22 +927,154 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       passes.hidden = candidates.length < 2
       setSplit(candidates[0])
     }
-    passes.onchange = () => setSplit(Number(passes.value))
+
+    slider.oninput = () => { passes.hidden = true; setSplit(Number(slider.value)) }
+
+    map.addEventListener('wheel', ev => {
+      ev.preventDefault()
+      const rect = map.getBoundingClientRect()
+      const anchor = clientToMapPoint(rect, view, ev.clientX, ev.clientY)
+      const factor = ev.deltaY < 0 ? 1.5 : 1 / 1.5
+      view = zoomMapView(view, view.zoom * factor, anchor)
+      applyView()
+    }, { passive: false })
+
+    const DRAG_THRESHOLD_PX = 5
+    let drag: { pointerId: number, startClientX: number, startClientY: number, startView: MapView, moved: boolean } | null = null
+    let suppressClickAt: { x: number, y: number } | null = null
+
+    map.addEventListener('pointerdown', ev => {
+      suppressClickAt = null
+      if (ev.button !== 0 || view.zoom <= 1) return
+      const pointerId = ev.pointerId ?? 0
+      drag = { pointerId, startClientX: ev.clientX, startClientY: ev.clientY, startView: { ...view }, moved: false }
+      if (typeof map.setPointerCapture === 'function' && ev.pointerId !== undefined) map.setPointerCapture(ev.pointerId)
+    })
+    map.addEventListener('pointermove', ev => {
+      if (!drag || (ev.pointerId ?? 0) !== drag.pointerId) return
+      const dxPx = ev.clientX - drag.startClientX
+      const dyPx = ev.clientY - drag.startClientY
+      if (!drag.moved && Math.hypot(dxPx, dyPx) < DRAG_THRESHOLD_PX) return
+      drag.moved = true
+      map.classList.add('is-panning')
+      view = panMapView(drag.startView, dxPx, dyPx, map.getBoundingClientRect())
+      applyView()
+    })
+    const endPan = (ev: PointerEvent) => {
+      if (!drag || (ev.pointerId ?? 0) !== drag.pointerId) return
+      if (drag.moved) suppressClickAt = { x: ev.clientX, y: ev.clientY }
+      if (typeof map.releasePointerCapture === 'function' && ev.pointerId !== undefined && map.hasPointerCapture?.(ev.pointerId)) {
+        map.releasePointerCapture(ev.pointerId)
+      }
+      map.classList.remove('is-panning')
+      drag = null
+    }
+    map.addEventListener('pointerup', endPan)
+    map.addEventListener('pointercancel', endPan)
+
+    map.onclick = ev => {
+      if (suppressClickAt) {
+        const suppressed = suppressClickAt
+        suppressClickAt = null
+        if (Math.hypot(ev.clientX - suppressed.x, ev.clientY - suppressed.y) < DRAG_THRESHOLD_PX) return
+      }
+      const rect = map.getBoundingClientRect()
+      const loc = clientToMapPoint(rect, view, ev.clientX, ev.clientY)
+      const candidates = pickBoundaryPasses(samples, loc, { zoom: view.zoom })
+      applyCandidates(candidates)
+    }
+    passes.onchange = () => { setSplit(Number(passes.value)); focusSplitOnMap() }
+
+    const findBox = document.createElement('search')
+    findBox.id = 'wiz-step2-search'
+    findBox.className = 'wiz-find-box'
+    findBox.hidden = !showStep2Search
+    const findRow = el('div', '', 'wiz-find-row')
+    const findInput = el('input', '', 'wiz-input')
+    findInput.type = 'search'
+    findInput.placeholder = 'Search city or stop (e.g. Pai)'
+    findInput.setAttribute('aria-label', 'Find place on route')
+    findInput.enterKeyHint = 'search'
+    const findList = el('ul', '', 'wiz-suggestions')
+    findList.id = 'wiz-step2-suggestions'
+    findList.setAttribute('role', 'list')
+    findList.setAttribute('aria-label', 'Route place suggestions')
+    findList.hidden = true
+
+    const findToggle = btn('Find place', () => {
+      showStep2Search = !showStep2Search
+      findBox.hidden = !showStep2Search
+      findToggle.setAttribute('aria-expanded', String(showStep2Search))
+      if (showStep2Search) findInput.focus()
+      else findToggle.focus()
+    }, 'wiz-link')
+    findToggle.setAttribute('aria-expanded', String(showStep2Search))
+    findToggle.setAttribute('aria-controls', 'wiz-step2-search')
+
+    const closeFind = btn('Close', () => {
+      showStep2Search = false
+      findBox.hidden = true
+      findToggle.setAttribute('aria-expanded', 'false')
+      findToggle.focus()
+    }, 'wiz-link')
+    findInput.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && findList.hidden && showStep2Search) {
+        e.preventDefault()
+        e.stopPropagation()
+        closeFind.click()
+      }
+    })
+    findRow.append(findInput, closeFind)
+    findBox.append(findRow, findList)
+
+    wirePlaceAutocomplete({
+      input: findInput,
+      list: findList,
+      bounds: trackBounds([segments]),
+      searchOnEnter: true,
+      onSelect: place => {
+        findInput.value = place.name
+        const hits = snapPlaceToRoute(samples, place.coords)
+        if (!hits.length) {
+          setStatus('Could not snap ' + place.name + ' to this day’s route.')
+          return
+        }
+        applyCandidates(hits.map(h => h.index))
+        focusSplitOnMap()
+        const nearest = hits[0].distanceKm
+        const distNote = nearest < 0.1 ? 'on route' : nearest.toFixed(1) + ' km from route'
+        if (hits.length >= 2) {
+          setStatus(`Found ${hits.length} passes near ${place.name} (${distNote}). Pick a pass and choose Split here.`)
+          passes.focus()
+        } else {
+          setStatus(`Moved split to ${place.name} (${distNote}). Choose Split here to confirm.`)
+        }
+      },
+      onError: msg => setStatus(msg),
+      onEmpty: () => setStatus('No matching places found.'),
+      onClear: () => setStatus(''),
+    })
 
     const bar = el('div', '', 'wiz-split-bar')
+    const barLeft = el('div', '', 'wiz-split-left')
+    barLeft.append(readout, findToggle)
     const barActions = el('div', '', 'wiz-stop-actions')
     barActions.append(deleteBtn(), btn('Split here', () => {
       try {
         const nextDay = setBoundary(project, day, null, samples[split])
         activeDayId = nextDay.id
+        showStep2Search = false
+        aiPlan = null
         setStatus('')
         mutate()
       } catch (e) { setStatus((e as Error).message) }
     }, 'wiz-ghost'))
-    bar.append(readout, barActions)
+    bar.append(barLeft, barActions)
 
     draw()
-    content.append(map, passes, slider, bar)
+    content.append(findBox, mapWrap, passes, slider, bar)
+    const aiBox = renderAiSplitBox(project)
+    if (aiBox) content.append(aiBox)
   }
 
   function toggleOvernight(project: Project, place: Place, day: Day) {
@@ -503,11 +1147,14 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     content.append(toggleAdd)
 
     if (!showAddPlace) return
+    const panel = el('div', '', 'wiz-add-panel')
     const form = el('div', '', 'wiz-add-row')
     const nameIn = el('input', '', 'wiz-input')
+    nameIn.type = 'text'
     nameIn.placeholder = 'Place name'
     nameIn.setAttribute('aria-label', 'Place name')
     const locIn = el('input', '', 'wiz-input')
+    locIn.type = 'text'
     locIn.placeholder = 'Lat, lon or map link'
     locIn.setAttribute('aria-label', 'Location')
     const add = btn('Add', () => {
@@ -519,7 +1166,106 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       mutate()
     }, 'wiz-primary')
     form.append(nameIn, locIn, add)
-    content.append(form)
+
+    const suggestions = el('ul', '', 'wiz-suggestions')
+    suggestions.id = 'wiz-stop-suggestions'
+    suggestions.setAttribute('role', 'list')
+    suggestions.setAttribute('aria-label', 'Place suggestions')
+    suggestions.hidden = true
+
+    const includedTracks = project.recordings.filter(r => r.included).map(r => r.track)
+    wirePlaceAutocomplete({
+      input: nameIn,
+      list: suggestions,
+      bounds: trackBounds(includedTracks),
+      onSelect: place => {
+        nameIn.value = place.name
+        locIn.value = `${place.coords.lat.toFixed(6)}, ${place.coords.lon.toFixed(6)}`
+        setStatus(`Selected ${place.name}. Choose Add to save.`)
+        add.focus()
+      },
+      onError: msg => setStatus(msg),
+      onClear: () => setStatus(''),
+    })
+
+    const keyBar = el('div', '', 'wiz-key-bar')
+    const providerNote = el('span')
+    const keyPanel = el('div', '', 'wiz-key-panel')
+    keyPanel.id = 'wiz-places-key-panel'
+    keyPanel.hidden = true
+
+    const keyLabel = el('label', 'Google Places API key', 'wiz-key-label')
+    keyLabel.htmlFor = 'wiz-google-key'
+    const keyRow = el('div', '', 'wiz-key-row')
+    const keyInput = el('input', '', 'wiz-input')
+    keyInput.id = 'wiz-google-key'
+    keyInput.type = 'password'
+    keyInput.placeholder = 'Paste Google Places key'
+    keyInput.autocomplete = 'off'
+    keyInput.spellcheck = false
+    keyInput.setAttribute('aria-describedby', 'wiz-google-key-note')
+    const keyNote = el('small', 'Stored only in this browser (never in trip backups). Leave blank to use free OpenStreetMap search.', 'wiz-key-note')
+    keyNote.id = 'wiz-google-key-note'
+
+    const keyToggle = btn('', () => {
+      keyPanel.hidden = !keyPanel.hidden
+      keyToggle.setAttribute('aria-expanded', String(!keyPanel.hidden))
+      if (!keyPanel.hidden) {
+        keyInput.value = getGooglePlacesKey()
+        keyInput.focus()
+      }
+    }, 'wiz-link')
+    keyToggle.setAttribute('aria-expanded', 'false')
+    keyToggle.setAttribute('aria-controls', 'wiz-places-key-panel')
+
+    const clearKeyBtn = btn('Clear', () => {
+      setGooglePlacesKey('')
+      keyInput.value = ''
+      keyPanel.hidden = true
+      keyToggle.setAttribute('aria-expanded', 'false')
+      syncKeyUi()
+      setStatus('Cleared Google Places key — using OpenStreetMap search.')
+      keyToggle.focus()
+    }, 'wiz-link')
+
+    const saveKeyBtn = btn('Save key', () => {
+      const saved = setGooglePlacesKey(keyInput.value)
+      keyPanel.hidden = true
+      keyToggle.setAttribute('aria-expanded', 'false')
+      syncKeyUi()
+      setStatus(saved
+        ? 'Google Places key saved in this browser only.'
+        : 'Cleared Google Places key — using OpenStreetMap search.')
+      keyToggle.focus()
+    }, 'wiz-ghost')
+
+    keyInput.addEventListener('keydown', e => {
+      if (e.isComposing) return
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        saveKeyBtn.click()
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        keyPanel.hidden = true
+        keyToggle.setAttribute('aria-expanded', 'false')
+        keyToggle.focus()
+      }
+    })
+
+    function syncKeyUi() {
+      const active = Boolean(getGooglePlacesKey())
+      providerNote.textContent = active ? 'Search: Google Places (this browser)' : 'Search: OpenStreetMap (free)'
+      keyToggle.textContent = active ? 'Google key · active' : 'Google key'
+      clearKeyBtn.hidden = !active
+    }
+    syncKeyUi()
+
+    keyRow.append(keyInput, saveKeyBtn, clearKeyBtn)
+    keyPanel.append(keyLabel, keyRow, keyNote)
+    keyBar.append(providerNote, keyToggle)
+    panel.append(form, suggestions, keyBar, keyPanel)
+    content.append(panel)
   }
 
   function renderStep4(project: Project) {
@@ -738,6 +1484,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
   }
 
   function renderContent() {
+    cancelSearches()
     const project = hooks.getProject()
     dialog.dataset.step = String(step)
     counterEl.textContent = step + ' / ' + STEP_TITLES.length
@@ -779,12 +1526,20 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
   }
 
   function reset() {
+    cancelSearches()
     step = 1
     activeDayId = ''
     showAddPlace = false
+    showStep2Search = false
     photoDayId = ''
     expandedCropPhotoId = ''
     statusText = ''
+    aiOpen = false
+    aiSettingsOpen = null
+    aiPrompt = ''
+    aiBusy = false
+    aiError = ''
+    aiPlan = null
   }
 
   return { show, hide, render, reset, isOpen }
