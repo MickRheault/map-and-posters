@@ -23,7 +23,7 @@ export function defaultOutput():OutputState {
   return {title:'My trip',credit:'',accent:'#196952',showDistance:true,showPeak:true,showProfile:true,phone:false,
     active:'trip',format:'jpg',selected:['trip'],groups:[],labels:{},placeVisibility:{}}
 }
-function slug(name:string) {
+export function slug(name:string) {
   return name.normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-|-$/g,'').slice(0,80) || 'poster'
 }
 export function posterFiles(project:Project,targets:PosterTarget[]) {
@@ -54,35 +54,21 @@ export async function rasterize(svg:string,format:OutputState['format']):Promise
     return blob
   } finally {URL.revokeObjectURL(url);canvas.width=canvas.height=0}
 }
-function download(blob:Blob,name:string) {
+export function downloadBlob(blob:Blob,name:string) {
   const a=document.createElement('a')
   a.href=URL.createObjectURL(blob);a.download=name
   document.body.append(a);a.click();a.remove()
   setTimeout(()=>URL.revokeObjectURL(a.href),60000)
 }
 
-export type OutputMode = 'full' | 'preview'
-
-export function mountOutput(host:HTMLElement,project:Project,notify:()=>void,mode:OutputMode='full') {
-  const onChange=()=>{mountOutput(host,project,notify,mode);notify()}
+export function mountOutput(host:HTMLElement,project:Project,notify:()=>void) {
+  const onChange=()=>{mountOutput(host,project,notify);notify()}
   const targets=availablePosters(project), state=project.output
   if(!project.days.length && !project.photos.length) {host.replaceChildren();return}
   const target=targets.find(t=>t.key===state.active) || targets[0]
   const eligible=posterPlaces(project,target)
   const checked=(v:boolean)=>v?' checked':''
   const options=targets.map(t=>'<option value="'+escapeText(t.key)+'"'+(target.key===t.key?' selected':'')+'>'+escapeText(t.name)+'</option>').join('')
-  const svg=renderPoster(project,target.key)
-  const previewHeader='<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label>Poster <select id="poster-target">'+options+'</select></label><label><input type="checkbox" id="poster-phone"'+checked(state.phone)+'> Phone width</label>'+(mode==='full'?'<button id="download-poster">Download '+state.format.toUpperCase()+'</button>':'')+'</div>'
-  const previewCanvas='<div id="poster-preview" style="margin:18px auto;width:'+ (state.phone?'375px':'min(100%, 560px)')+';max-width:100%;line-height:0;box-shadow:0 4px 16px #183e3422">'+svg+'</div>'
-  const wirePreview=(get:<T extends HTMLElement>(selector:string)=>T)=>{
-    get<HTMLSelectElement>('#poster-target').onchange=e=>{state.active=(e.currentTarget as HTMLSelectElement).value;onChange()}
-    get<HTMLInputElement>('#poster-phone').onchange=e=>{state.phone=(e.currentTarget as HTMLInputElement).checked;onChange()}
-  }
-  if (mode==='preview') {
-    host.innerHTML=previewHeader+previewCanvas
-    wirePreview(<T extends HTMLElement>(selector:string)=>host.querySelector<T>(selector)!)
-    return
-  }
   const checks=targets.map(t=>'<label><input type="checkbox" data-poster-key="'+escapeText(t.key)+'"'+checked(state.selected.includes(t.key))+'>'+escapeText(t.name)+'</label>').join(' ')
   const days=targets.filter(t=>t.key.startsWith('day:')).map(t=>'<label><input type="checkbox" data-group-day="'+escapeText(t.days[0].id)+'">'+escapeText(t.name)+'</label>').join(' ')
   const pins=eligible.map(p=>{
@@ -91,9 +77,11 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void,mod
     const options=Object.entries(modes).map(([key,name])=>'<option value="'+key+'"'+(selected===key?' selected':'')+'>'+name+'</option>').join('')
     return '<div><label><input type="checkbox" data-visibility="'+escapeText(p.id)+'"'+checked(state.placeVisibility?.[target.key]?.[p.id] ?? p.visible)+'>'+escapeText(p.name)+'</label> <select aria-label="Printed label for '+escapeText(p.name)+'" data-place-text="'+escapeText(p.id)+'">'+options+'</select></div>'
   }).join('')
+  const svg=renderPoster(project,target.key)
   const openDetails=new Set(Array.from(host.querySelectorAll('details[open]')).map(d=>d.id))
   const open=(id:string)=>openDetails.has(id)?' open':''
-  host.innerHTML=previewHeader+previewCanvas+
+  host.innerHTML='<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><label>Poster <select id="poster-target">'+options+'</select></label><label><input type="checkbox" id="poster-phone"'+checked(state.phone)+'> Phone width</label><button id="download-poster">Download '+state.format.toUpperCase()+'</button></div>'+
+    '<div id="poster-preview" style="margin:18px auto;width:'+ (state.phone?'375px':'min(100%, 560px)')+';max-width:100%;line-height:0;box-shadow:0 4px 16px #183e3422">'+svg+'</div>'+
     '<details id="poster-style"'+open('poster-style')+'><summary>Poster style</summary><fieldset><label>Trip title <input type="text" id="poster-title" maxlength="100" value="'+escapeText(state.title)+'"></label> <label>Credit <input type="text" id="poster-credit" maxlength="140" value="'+escapeText(state.credit)+'"></label> <label>Accent <input id="poster-accent" type="color" value="'+state.accent+'"></label><p>'+
     (['showDistance','showPeak','showProfile'] as const).map((prop,i)=>'<label><input type="checkbox" data-stat="'+prop+'"'+checked(state[prop])+'>'+['Distance','Highest point','Elevation profile'][i]+'</label>').join(' ')+'</p></fieldset></details>'+
     (eligible.length?'<details id="poster-labels"'+open('poster-labels')+'><summary>Map labels</summary><fieldset><legend>Places on this poster</legend>'+pins+'<p>Drag a map label to move it. Keyboard users can focus a label and use the arrow keys.</p><button id="reset-labels">Reset label positions</button></fieldset></details>':'')+
@@ -105,7 +93,8 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void,mod
     const el=get<T>(selector)
     el.onchange=()=>{fn(el);onChange()}
   }
-  wirePreview(get)
+  change<HTMLSelectElement>('#poster-target',el=>state.active=el.value)
+  change<HTMLInputElement>('#poster-phone',el=>state.phone=el.checked)
   change('#poster-title',el=>state.title=el.value)
   change('#poster-credit',el=>state.credit=el.value)
   change('#poster-accent',el=>state.accent=el.value)
@@ -168,9 +157,9 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void,mod
           const blob=await rasterize(file.svg,format)
           entries.push({name:file.name,bytes:new Uint8Array(await blob.arrayBuffer())})
         }
-        download(zip(entries),archiveName)
+        downloadBlob(zip(entries),archiveName)
       }else{
-        download(await rasterize(svg,format),files.find(f=>f.target.key===target.key)!.name)
+        downloadBlob(await rasterize(svg,format),files.find(f=>f.target.key===target.key)!.name)
       }
       message.textContent='Download ready.'
     }catch(e){message.textContent=e instanceof Error?e.message:'Download failed.'}
@@ -180,7 +169,7 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void,mod
   archive.onclick=()=>void run(true)
 }
 
-function wireLabelEditing(svg:SVGSVGElement,key:string,state:OutputState,onChange:()=>void) {
+export function wireLabelEditing(svg:SVGSVGElement,key:string,state:OutputState,onChange:()=>void) {
   const save=(id:string,x:number,y:number)=>{
     const labels=state.labels[key] ||= {}
     labels[id]={x,y}

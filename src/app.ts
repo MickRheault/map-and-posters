@@ -3,57 +3,25 @@ import { mountAssets } from './assets-ui'
 import { importRecording } from './itinerary'
 import { mountItinerary } from './itinerary-ui'
 import { parseGpx } from './track'
-import { mountOutput } from './output'
+import { downloadBlob, mountOutput } from './output'
 import { backup, newProject, restore, type Project } from './project'
 import { loadProject, saveProject } from './storage'
+import { createWizard } from './wizard'
 
 const node = <T extends HTMLElement>(id: string) => document.getElementById(id) as T
 const fileInput = node<HTMLInputElement>('file')
 const restoreInput = node<HTMLInputElement>('restore')
 const backupButton = node<HTMLButtonElement>('backup')
+const openWizardButton = node<HTMLButtonElement>('open-wizard')
 const status = node('storage-status')
 const message = node('message')
 const itinerary = node('itinerary')
 const assets = node('assets')
 const output = node('output')
-const importTools = node('import-tools')
-const backupTools = node('backup-tools')
-const restoreTools = document.querySelector<HTMLElement>('.restore')!
-const tabs = document.querySelector<HTMLElement>('.tabs')!
-const stepper = node('wizard-stepper')
-const wizardHead = node('wizard-head')
-const wizardHeading = node('wizard-heading')
-const wizardGuide = node('wizard-guide')
-const wizardExtra = node('wizard-step-extra')
-const wizardNav = node('wizard-nav')
-const wizardBack = node<HTMLButtonElement>('wizard-back')
-const wizardNext = node<HTMLButtonElement>('wizard-next')
-
-type StepConfig = {
-  label: string
-  title: string
-  guide: string
-  itinerary?: 'recordings' | 'days'
-  assets?: 'places' | 'photos'
-  output: 'preview' | 'full'
-  showImport?: boolean
-  showBackup?: boolean
-  showRestore?: boolean
-}
-
-const steps: readonly StepConfig[] = [
-  { label: 'Import GPX', title: 'Step 1: Import GPX & Order', guide: 'Upload one or more GPX files, check their order, and exclude duplicate recordings. You can also restore a saved backup or start with a photo-only rest day.', itinerary: 'recordings', output: 'preview', showImport: true, showBackup: true, showRestore: true },
-  { label: 'Split days', title: 'Step 2: Split Days & Rest Days', guide: 'Pick a day, click the map or elevation profile to set boundaries, rename or recolour days, and insert rest days.', itinerary: 'days', output: 'preview' },
-  { label: 'Places', title: 'Step 3: Places & Visits', guide: 'Review imported GPX waypoints, add stops by coordinates or map click, choose which places print on posters, and record overnight stays.', assets: 'places', output: 'preview' },
-  { label: 'Photos', title: 'Step 4: Photos & Crops', guide: 'Assign photos to the full trip or a specific day, pick a lead photo, adjust crops, and approve photo GPS pins.', assets: 'photos', output: 'preview' },
-  { label: 'Style & export', title: 'Step 5: Style, Labels & Export', guide: 'Use the Poster studio on the right to customize title, colours, and map labels, group days, and download JPG, PNG, or ZIP posters.', output: 'full', showBackup: true },
-]
+const wizardDialog = node<HTMLDialogElement>('wizard-dialog')
 
 let project = newProject()
 let revision = 0
-let mode: 'wizard' | 'full' = 'wizard'
-let step = 1
-let fullTab: 'itinerary' | 'assets' = 'itinerary'
 
 function changed() {
   const edit = ++revision
@@ -83,75 +51,25 @@ function mergeDay(removed: string, kept: string) {
   }
 }
 
-function activeStep() { return steps[step - 1] }
-
 function showItinerary() {
-  const section = mode === 'full' ? 'all' : activeStep().itinerary
-  if (!section) { itinerary.replaceChildren(); return }
-  mountItinerary(itinerary, project, () => { showAssets(); showOutput(); changed() }, mergeDay, section)
+  mountItinerary(itinerary, project, () => { showAssets(); showOutput(); changed() }, mergeDay)
 }
 function showAssets() {
-  const section = mode === 'full' ? 'all' : activeStep().assets
-  if (!section) { assets.replaceChildren(); return }
-  mountAssets(assets, project, () => { showOutput(); changed() }, section)
+  mountAssets(assets, project, () => { showOutput(); changed() })
 }
 function showOutput() {
-  mountOutput(output, project, changed, mode === 'full' ? 'full' : activeStep().output)
+  mountOutput(output, project, changed)
 }
-
-function syncChrome() {
-  const wizard = mode === 'wizard', current = activeStep()
-  document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(button => {
-    button.setAttribute('aria-pressed', String(button.dataset.mode === mode))
-  })
-  stepper.hidden = wizardHead.hidden = wizardNav.hidden = !wizard
-  tabs.hidden = wizard
-  importTools.hidden = wizard && !current.showImport
-  backupTools.hidden = wizard && !current.showBackup
-  restoreTools.hidden = wizard && !current.showRestore
-  itinerary.hidden = wizard ? !current.itinerary : fullTab !== 'itinerary'
-  assets.hidden = wizard ? !current.assets : fullTab !== 'assets'
-  wizardExtra.replaceChildren()
-  if (wizard) {
-    wizardHeading.textContent = current.title
-    wizardGuide.textContent = current.guide
-    document.querySelectorAll<HTMLButtonElement>('[data-step]').forEach(button => {
-      if (Number(button.dataset.step) === step) button.setAttribute('aria-current', 'step')
-      else button.removeAttribute('aria-current')
-    })
-    wizardBack.disabled = step === 1
-    wizardNext.hidden = step === steps.length
-    if (step < steps.length) wizardNext.textContent = 'Next: ' + steps[step].label
-    if (step === 5) {
-      const tip = document.createElement('p')
-      tip.className = 'wizard-tip'
-      tip.textContent = project.days.length || project.photos.length
-        ? 'Your trip saves automatically in this browser. Download a backup file above if you plan to move browsers or clear site data.'
-        : 'Import a GPX or add a rest day in Step 1 first to preview and export posters.'
-      wizardExtra.append(tip)
-    }
-  }
-}
-
-function render() {
-  syncChrome()
+function renderEditor() {
   showItinerary()
   showAssets()
   showOutput()
 }
-
-function goStep(next: number) {
-  step = Math.max(1, Math.min(steps.length, next))
-  render()
-  if (mode === 'wizard') wizardHeading.focus()
-}
-
 function busy(value: boolean) {
   fileInput.disabled = restoreInput.disabled = backupButton.disabled = value
 }
 
-fileInput.onchange = async () => {
-  const files = Array.from(fileInput.files || [])
+async function importGpxFiles(files: File[]): Promise<string> {
   busy(true)
   const errors: string[] = []
   let imported = 0
@@ -173,59 +91,61 @@ fileInput.onchange = async () => {
         imported++
       } catch(error) { errors.push(file.name+' — '+(error as Error).message) }
     }
-    if (imported) { changed(); render() }
-    message.textContent = [imported ? 'Imported '+imported+' GPX '+(imported===1?'file.':'files.') : '', ...errors].filter(Boolean).join(' ')
+    if (imported) { changed(); renderEditor() }
+    const summary = [imported ? 'Imported '+imported+' GPX '+(imported===1?'file.':'files.') : '', ...errors].filter(Boolean).join(' ')
+    message.textContent = summary
+    return summary
   } finally { busy(false); fileInput.value='' }
 }
 
-backupButton.onclick = () => {
-  const href=URL.createObjectURL(new Blob([backup(project)],{type:'application/json'}))
-  const link=document.createElement('a')
-  link.download='map-and-posters-backup.json'
-  link.href=href
-  link.click()
-  setTimeout(()=>URL.revokeObjectURL(href),60000)
+function downloadBackup() {
+  downloadBlob(new Blob([backup(project)],{type:'application/json'}),'map-and-posters-backup.json')
 }
 
-restoreInput.onchange = async () => {
-  const file=restoreInput.files?.[0]
-  if (!file) return
+async function restoreBackupFile(file: File): Promise<string> {
   busy(true)
   try {
     const restored=restore(await file.text())
     if ((project.sources.length || project.days.length || project.places.length || project.photos.length)
-      && !window.confirm('Replace the current trip with this backup?')) return
+      && !window.confirm('Replace the current trip with this backup?')) return ''
     const previous=project
     project=restored
-    try { render() }
-    catch (error) { project=previous; render(); throw error }
+    try { renderEditor() }
+    catch (error) { project=previous; renderEditor(); throw error }
     changed()
-    message.textContent='Restored '+file.name
+    const summary='Restored '+file.name
+    message.textContent=summary
+    return summary
   } catch(error) {
-    message.textContent='Could not restore this backup. '+(error as Error).message
+    const summary='Could not restore this backup. '+(error as Error).message
+    message.textContent=summary
+    return summary
   } finally {busy(false); restoreInput.value=''}
 }
 
-document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(button => {
-  button.onclick = () => {
-    const next = button.dataset.mode === 'full' ? 'full' : 'wizard'
-    if (next === mode) return
-    mode = next
-    render()
-  }
+const wizard = createWizard(wizardDialog, {
+  getProject: () => project,
+  importGpx: importGpxFiles,
+  downloadBackup,
+  restoreBackup: restoreBackupFile,
+  onMutate: () => { changed(); renderEditor() },
+  onExit: () => { renderEditor() },
 })
 
-document.querySelectorAll<HTMLButtonElement>('[data-step]').forEach(button => {
-  button.onclick = () => goStep(Number(button.dataset.step))
-})
-wizardBack.onclick = () => goStep(step - 1)
-wizardNext.onclick = () => goStep(step + 1)
+fileInput.onchange = async () => { await importGpxFiles(Array.from(fileInput.files || [])) }
+backupButton.onclick = downloadBackup
+restoreInput.onchange = async () => {
+  const file=restoreInput.files?.[0]
+  if (file) await restoreBackupFile(file)
+}
+openWizardButton.onclick = () => wizard.show()
 
 document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(button => {
   button.onclick = () => {
-    fullTab = button.dataset.tab === 'assets' ? 'assets' : 'itinerary'
+    const tab = button.dataset.tab
+    itinerary.hidden = tab !== 'itinerary'
+    assets.hidden = tab !== 'assets'
     document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(item => item.setAttribute('aria-pressed',String(item===button)))
-    syncChrome()
   }
 })
 
@@ -237,8 +157,9 @@ async function start() {
   } catch {
     status.textContent='Local save unavailable · Download a backup'
   } finally {
-    render()
+    renderEditor()
     busy(false)
+    wizard.show()
   }
 }
 void start()

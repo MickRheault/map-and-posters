@@ -161,42 +161,32 @@ function boundaryEditor(project:Itinerary,left:Day,right:Day|null,commit:()=>voi
   return panel
 }
 
-export type ItinerarySection = 'all' | 'recordings' | 'days'
-
-export function mountItinerary(host:HTMLElement,project:Itinerary,onChange:()=>void,onMerge?:(removed:string,kept:string)=>void,section:ItinerarySection='all') {
+export function mountItinerary(host:HTMLElement,project:Itinerary,onChange:()=>void,onMerge?:(removed:string,kept:string)=>void) {
   host.replaceChildren()
-  function commit(){mountItinerary(host,project,onChange,onMerge,section); onChange()}
+  function commit(){mountItinerary(host,project,onChange,onMerge); onChange()}
   if(!project.recordings.length && !project.days.length) {
-    host.append(button(section==='recordings'?'Start with a rest day':'Add a rest day',()=>{insertRestDay(project,0);commit()}))
+    host.append(button('Add a rest day',()=>{insertRestDay(project,0);commit()}))
     return
   }
-  if(section!=='days') {
-    if(project.recordings.length) host.append(element('h3','Recordings'))
-    project.recordings.forEach((rec,i)=>{
-      const row=element('div')
-      row.className='recording-row'
-      const checkbox=element('input')
-      checkbox.type='checkbox'; checkbox.checked=rec.included
-      checkbox.onchange=()=>{rec.included=checkbox.checked;commit()}
-      const label=element('label');label.append(checkbox,' '+rec.name)
-      const up=button('↑',()=>{moveRecording(project,i,-1);commit()},i===0)
-      const down=button('↓',()=>{moveRecording(project,i,1);commit()},i===project.recordings.length-1)
-      up.setAttribute('aria-label','Move '+rec.name+' earlier')
-      down.setAttribute('aria-label','Move '+rec.name+' later')
-      row.append(label,up,down)
-      const start=rec.track[0]?.[0]?.time
-      if(start) row.append(element('small',start))
-      const overlaps=project.recordings.slice(0,i).filter(other=>possibleOverlap(rec,other))
-      if(overlaps.length) row.append(element('small','Possible overlap with '+overlaps.map(r=>r.name).join(', ')))
-      host.append(row)
-    })
-  }
-  if(section==='recordings') {
-    if(!project.recordings.length && project.days.length) {
-      host.append(element('p','Rest day added. Continue to Step 2 to name it or Step 4 to add photos.'))
-    }
-    return
-  }
+  if(project.recordings.length) host.append(element('h3','Recordings'))
+  project.recordings.forEach((rec,i)=>{
+    const row=element('div')
+    row.className='recording-row'
+    const checkbox=element('input')
+    checkbox.type='checkbox'; checkbox.checked=rec.included
+    checkbox.onchange=()=>{rec.included=checkbox.checked;commit()}
+    const label=element('label');label.append(checkbox,' '+rec.name)
+    const up=button('↑',()=>{moveRecording(project,i,-1);commit()},i===0)
+    const down=button('↓',()=>{moveRecording(project,i,1);commit()},i===project.recordings.length-1)
+    up.setAttribute('aria-label','Move '+rec.name+' earlier')
+    down.setAttribute('aria-label','Move '+rec.name+' later')
+    row.append(label,up,down)
+    const start=rec.track[0]?.[0]?.time
+    if(start) row.append(element('small',start))
+    const overlaps=project.recordings.slice(0,i).filter(other=>possibleOverlap(rec,other))
+    if(overlaps.length) row.append(element('small','Possible overlap with '+overlaps.map(r=>r.name).join(', ')))
+    host.append(row)
+  })
   host.append(element('h3','Itinerary'))
   const selector=element('select')
   project.days.forEach(day=>selector.add(option(dayName(project,day)+(day.date?' · '+day.date:''),day.id)))

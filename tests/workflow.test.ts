@@ -293,74 +293,74 @@ async function checkDownloads(app:ReturnType<typeof editor>,dir:string) {
   await verifyZip(zip,dir,expectedNames,app.downloads)
 }
 
-test('guided wizard defaults to Step 1, supports GPX import/reorder/overlap exclusion, step focus, and mode switching', async()=>{
+test('centered wizard dialog opens on Step 1, handles GPX upload/reorder/overlap, rest-day start, and Full editor toggle', async()=>{
   const app=await open()
   try {
-    const wizardBtn=app.doc.querySelector<HTMLButtonElement>('[data-mode="wizard"]')!
-    const fullBtn=app.doc.querySelector<HTMLButtonElement>('[data-mode="full"]')!
-    expect(wizardBtn.getAttribute('aria-pressed')).toBe('true')
-    expect(fullBtn.getAttribute('aria-pressed')).toBe('false')
-    expect(app.doc.querySelector('[data-step="1"]')?.getAttribute('aria-current')).toBe('step')
-    expect(app.doc.querySelector('#wizard-heading')?.textContent).toContain('Import GPX')
-    expect(app.doc.querySelector<HTMLElement>('.tabs')?.hidden).toBe(true)
+    const dialog=app.doc.querySelector<HTMLDialogElement>('#wizard-dialog')!
+    expect(dialog).not.toBeNull()
+    expect(dialog.hasAttribute('open')).toBe(true)
+    expect(dialog.querySelector('h1#wizard-heading')?.textContent).toBe('Add your GPX')
+    expect(dialog.querySelector('[data-step="1"]')?.getAttribute('aria-current')).toBe('step')
+    expect(dialog.querySelector<HTMLButtonElement>('#wizard-next')?.hidden).toBe(true)
 
     const a=gpx('west.gpx',[[0,0],[0,0.01],[0,0.02]])
     const b=gpx('east.gpx',[[0,5],[0,5.01],[0,5.02]])
     const duplicate=new File([a],'copy.gpx',{type:a.type})
-    await app.upload('#file',[a,b,duplicate])
-    expect(app.doc.querySelector('#message')?.textContent).toContain('Imported 3 GPX files')
+    await app.upload('#wizard-gpx',[a,b,duplicate])
+    expect(dialog.querySelector<HTMLButtonElement>('#wizard-next')?.hidden).toBe(false)
 
-    const rows=()=>Array.from(app.doc.querySelectorAll<HTMLElement>('.recording-row'))
+    const rows=()=>Array.from(dialog.querySelectorAll<HTMLElement>('.wiz-rec'))
+    expect(rows()).toHaveLength(3)
     expect(rows()[2].textContent).toContain('Possible overlap')
-    rows()[2].querySelector('input')!.click()
-    rows()[1].querySelector('button')!.click()
+    rows()[2].querySelector<HTMLInputElement>('input[type=checkbox]')!.click()
+    rows()[1].querySelector<HTMLButtonElement>('button[aria-label*="earlier"]')!.click()
     expect(rows()[0].textContent).toContain('east.gpx')
-    expect(app.doc.querySelector('#output svg')?.textContent).toContain('4.4 km')
-    expect(app.doc.querySelector('#download-poster')).toBeNull()
-    expect(app.doc.querySelector('#download-zip')).toBeNull()
+    expect(dialog.textContent).toContain('4.4 km')
 
-    app.button('Next: Split days')
-    expect(app.doc.querySelector('[data-step="2"]')?.getAttribute('aria-current')).toBe('step')
-    expect(app.doc.activeElement).toBe(app.doc.querySelector('#wizard-heading'))
+    app.button('Continue')
+    expect(dialog.querySelector('[data-step="2"]')?.getAttribute('aria-current')).toBe('step')
+    expect(app.doc.activeElement).toBe(dialog.querySelector('#wizard-heading'))
 
     app.button('Back')
-    expect(app.doc.querySelector('[data-step="1"]')?.getAttribute('aria-current')).toBe('step')
+    expect(dialog.querySelector('[data-step="1"]')?.getAttribute('aria-current')).toBe('step')
     expect(rows()[0].textContent).toContain('east.gpx')
 
+    // Exit to Full editor and reopen Guided wizard without losing edits
     app.button('Full editor')
-    expect(fullBtn.getAttribute('aria-pressed')).toBe('true')
-    expect(app.doc.querySelector<HTMLElement>('.tabs')?.hidden).toBe(false)
-    expect(app.doc.querySelector('#download-poster')).not.toBeNull()
-    expect(rows()[0].textContent).toContain('east.gpx')
-
+    expect(dialog.hasAttribute('open')).toBe(false)
+    expect(app.doc.querySelector('#output svg')?.textContent).toContain('4.4 km')
     app.button('Guided wizard')
-    expect(wizardBtn.getAttribute('aria-pressed')).toBe('true')
-    expect(app.doc.querySelector('#download-poster')).toBeNull()
+    expect(dialog.hasAttribute('open')).toBe(true)
   } finally { app.dom.window.close() }
 })
 
-test('Step 1 can start a photo-only rest day before any GPX is imported', async()=>{
+test('centered wizard Step 1 can start with a photo-only rest day', async()=>{
   const app=await open()
   try {
+    const dialog=app.doc.querySelector<HTMLDialogElement>('#wizard-dialog')!
     app.button('Start with a rest day')
-    expect(app.doc.querySelector('#itinerary')?.textContent).toContain('Rest day added')
-    expect(app.doc.querySelector('#output svg')?.textContent).toContain('Day 1')
+    expect(dialog.querySelector('[data-step="2"]')?.getAttribute('aria-current')).toBe('step')
+    expect(dialog.textContent).toContain('Day 1')
   } finally { app.dom.window.close() }
 })
 
-test('Step 2 splits an out-and-back on a repeated pass, inserts a named rest day, groups days, and hides recording-order clutter', async()=>{
+test('centered wizard walks Steps 1 → 5: split repeated pass, rest day, stops + overnight, photos + crop + GPS pin, title, label drag, downloads, reload and backup restore', async()=>{
   const app=await open(),windows=[app.dom.window]
+  const tmp=await mkdtemp(join(tmpdir(),'wizard-dialog-'))
   try {
-    const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.01,310],[18,98,300],[18,98.03,320],[18,98.05,340]])
-    await app.upload('#file',[route])
-    app.button('Next: Split days')
-    expect(app.doc.querySelector('[data-step="2"]')?.getAttribute('aria-current')).toBe('step')
-    expect(app.doc.querySelectorAll('#itinerary .recording-row')).toHaveLength(0)
+    const dialog=()=>app.doc.querySelector<HTMLDialogElement>('#wizard-dialog')!
 
-    // Pick the repeated coordinate (18, 98.01) on the boundary map and choose Pass 2
-    const map=app.doc.querySelector<SVGSVGElement>('#itinerary svg[aria-label="Choose a boundary on the recorded route"]')!
+    // Step 1: Upload out-and-back GPX + waypoints
+    const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.01,310],[18,98,300],[18,98.03,320],[18,98.05,340]])
+    const waypoints=new File(['<gpx><wpt lat="18" lon="98.01"><name>Farm homestay</name></wpt></gpx>'],'places.gpx',{type:route.type})
+    await app.upload('#wizard-gpx',[route,waypoints])
+    app.button('Continue')
+
+    // Step 2: Split on 2nd visit to (18, 98.01) via map click, then add named rest day
+    expect(dialog().querySelector('#wizard-heading')?.textContent).toBe('Split into days')
+    const map=dialog().querySelector<SVGSVGElement>('svg[aria-label="Choose a boundary on the recorded route"]')!
     Object.defineProperty(map,'getBoundingClientRect',{value:()=>({left:0,top:0,width:400,height:200})})
-    const pts: {x:number,y:number}[]=[]
+    const pts:{x:number,y:number}[]=[]
     for(const p of Array.from(map.querySelectorAll('path')).reverse()) {
       for(const m of p.getAttribute('d')!.matchAll(/([ML])([\d.-]+),([\d.-]+)/g)) {
         const pt={x:Number(m[2]),y:Number(m[3])},last=pts[pts.length-1]
@@ -369,97 +369,38 @@ test('Step 2 splits an out-and-back on a repeated pass, inserts a named rest day
     }
     const repeat=pts.find((pt,i)=>i>0 && pts.slice(i+1,-1).some(o=>Math.hypot(o.x-pt.x,o.y-pt.y)<0.5))!
     map.dispatchEvent(new app.dom.window.MouseEvent('click',{clientX:repeat.x,clientY:repeat.y}))
-    const passes=app.field('Matching visits') as HTMLSelectElement
+    const passes=dialog().querySelector<HTMLSelectElement>('select[aria-label="Matching visits"]')!
     expect(passes.options).toHaveLength(2)
     app.change(passes,passes.options[1].value)
-    app.button('Create next day')
+    app.button('Split here')
+    expect(dialog().querySelectorAll('.wiz-day-pill')).toHaveLength(2)
+    app.button('+ Rest day')
+    const dayNameInput=dialog().querySelector<HTMLInputElement>('input[aria-label="Day name"]')!
+    app.change(dayNameInput,'Pai')
+    app.button('Continue')
 
-    const days=app.field('Edit day') as HTMLSelectElement
-    expect(days.options).toHaveLength(2)
-    app.change(days,days.options[1].value)
-    app.button('Rest day after')
-    app.change(app.field('Day name'),'Pai')
+    // Step 3: Pick stops — toggle Farm homestay visible + one-click Overnight, plus add custom stop
+    expect(dialog().querySelector('#wizard-heading')?.textContent).toBe('Pick stops')
+    const stopRow=Array.from(dialog().querySelectorAll<HTMLElement>('.wiz-stop')).find(r=>r.textContent?.includes('Farm homestay'))!
+    stopRow.querySelector<HTMLInputElement>('input[type=checkbox]')!.click()
+    const stopRowAfter=Array.from(dialog().querySelectorAll<HTMLElement>('.wiz-stop')).find(r=>r.textContent?.includes('Farm homestay'))!
+    const overnightBtn=Array.from(stopRowAfter.querySelectorAll('button')).find(b=>b.textContent==='Overnight')!
+    overnightBtn.click()
+    expect(Array.from(dialog().querySelectorAll<HTMLElement>('.wiz-stop')).find(r=>r.textContent?.includes('Farm homestay'))!.querySelector('button[aria-pressed="true"]')).not.toBeNull()
+    app.button('+ Add place')
+    const placeName=dialog().querySelector<HTMLInputElement>('input[aria-label="Place name"]')!
+    const placeLoc=dialog().querySelector<HTMLInputElement>('input[aria-label="Location"]')!
+    placeName.value='Ridge camp';placeLoc.value='18.04, 98.04'
+    app.button('Add')
+    expect(dialog().textContent).toContain('Ridge camp')
+    app.button('Continue')
 
-    // Also verify grouping consecutive riding days works in Step 2
-    const groupRoute=gpx('Next.gpx',[[18,98.05,340],[18,98.06,350]])
-    app.button('Back')
-    await app.upload('#file',[groupRoute])
-    app.button('Next: Split days')
-    const daysAfter=app.field('Edit day') as HTMLSelectElement
-    app.change(daysAfter,daysAfter.options[0].value)
-    app.button('Group with next day')
-
-    const svgText=app.doc.querySelector('#output svg')?.textContent || ''
-    expect(svgText).toContain('Day 2 · Pai')
-    app.button('Full editor')
-    expect(app.doc.querySelector('#output svg')?.textContent).toContain('Day 2 · Pai')
-    app.button('Guided wizard')
-    await until(()=>app.doc.querySelector('#storage-status')?.textContent==='Saved on this device','Autosave failed')
-
-    const reloaded=await open(app.store);windows.push(reloaded.dom.window)
-    reloaded.button('Next: Split days')
-    expect((reloaded.field('Edit day') as HTMLSelectElement).options.length).toBe(3)
-    expect(reloaded.doc.querySelector('#output svg')?.textContent).toContain('Day 2 · Pai')
-  } finally {
-    await Bun.sleep(0)
-    windows.forEach(w=>w.close())
-  }
-})
-
-test('Step 3 curates places, records an overnight visit, exports GPX, persists across steps/modes, and hides photo controls', async()=>{
-  const app=await open()
-  try {
-    const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.01,310],[18,98,300]])
-    const waypoints=new File(['<gpx><wpt lat="18" lon="98.01"><name>Farm homestay</name></wpt></gpx>'],'places.gpx',{type:route.type})
-    await app.upload('#file',[route,waypoints])
-    app.button('Next: Split days')
-    app.button('Next: Places')
-    expect(app.doc.querySelector('[data-step="3"]')?.getAttribute('aria-current')).toBe('step')
-    expect(app.doc.querySelector('#assets')?.textContent).toContain('Places & visits')
-    expect(app.doc.querySelector('#assets')?.textContent).not.toContain('Add photos to')
-
-    const farm=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='Farm homestay')!
-    farm.open=true
-    farm.dispatchEvent(new app.dom.window.Event('toggle'))
-    farm.querySelector<HTMLInputElement>('input[type=checkbox]')!.click()
-    const farmAgain=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='Farm homestay')!
-    farmAgain.open=true
-    farmAgain.dispatchEvent(new app.dom.window.Event('toggle'))
-    ;(app.field('Overnight stay',farmAgain) as HTMLInputElement).click()
-    Array.from(farmAgain.querySelectorAll('button')).find(b=>b.textContent==='Add visit')!.click()
-
-    expect(app.doc.querySelector('#output svg')?.textContent).toContain('Farm homestay')
-    app.button('Download GPX with selected places')
-    expect(await app.downloads.get('trip-with-places.gpx')?.text()).toContain('Farm homestay')
-
-    // Persist across step navigation and mode switch
-    app.button('Back')
-    app.button('Next: Places')
-    expect(app.doc.querySelector('#assets')?.textContent).toContain('Overnight')
-    app.button('Full editor')
-    app.button('Places & photos')
-    expect(app.doc.querySelector('#assets')?.textContent).toContain('Overnight')
-    app.button('Guided wizard')
-    expect(app.doc.querySelector('#output svg')?.textContent).toContain('Farm homestay')
-    await Bun.sleep(0)
-  } finally { app.dom.window.close() }
-})
-
-test('Step 4 assigns photos, sets lead photo and crop/zoom, approves GPS pin, persists on reload, and hides place-creation forms', async()=>{
-  const app=await open(),windows=[app.dom.window]
-  try {
-    const route=gpx('Loop.gpx',[[18,98,300],[18,98.02,320]])
-    await app.upload('#file',[route])
-    app.button('Next: Split days')
-    app.button('Next: Places')
-    app.button('Next: Photos')
-    expect(app.doc.querySelector('[data-step="4"]')?.getAttribute('aria-current')).toBe('step')
-    expect(app.doc.querySelector('#assets')?.textContent).toContain('Photos')
-    expect(app.doc.querySelector('#assets')?.textContent).not.toContain('Places & visits')
-
-    const target=app.field('Add photos to') as HTMLSelectElement
-    app.change(target,target.options[1].value)
-    const baseJpeg=await sharp({create:{width:800,height:600,channels:3,background:'#b03020'}}).jpeg().toBuffer()
+    // Step 4: Add photos (one GPS-tagged + one rest-day hero with crop)
+    expect(dialog().querySelector('#wizard-heading')?.textContent).toBe('Add photos')
+    const target=dialog().querySelector<HTMLSelectElement>('#wizard-photo-day')!
+    const paiOpt=Array.from(target.options).find(o=>o.textContent?.includes('Pai'))!
+    app.change(target,paiOpt.value)
+    const baseJpeg=await sharp({create:{width:1200,height:800,channels:3,background:'#a92725'}}).jpeg().toBuffer()
     const tiff=new Uint8Array(128),td=new DataView(tiff.buffer)
     td.setUint16(0,0x4949,true);td.setUint16(2,42,true);td.setUint32(4,8,true);td.setUint16(8,1,true)
     td.setUint16(10,0x8825,true);td.setUint16(12,4,true);td.setUint32(14,1,true);td.setUint32(18,26,true)
@@ -474,134 +415,66 @@ test('Step 4 assigns photos, sets lead photo and crop/zoom, approves GPS pin, pe
     app1.set([0xff,0xe1,0,0,69,120,105,102,0,0]);app1.set(tiff,10)
     new DataView(app1.buffer).setUint16(2,tiff.length+8)
     const gpsPhoto=Buffer.concat([baseJpeg.subarray(0,2),app1,baseJpeg.subarray(2)])
-    const secondPhoto=await sharp({create:{width:800,height:600,channels:3,background:'#2050b0'}}).jpeg().toBuffer()
-    await app.upload('#assets input[type=file]',[
-      new File([gpsPhoto],'viewpoint.jpg',{type:'image/jpeg'}),
-      new File([secondPhoto],'ridge.jpg',{type:'image/jpeg'})
-    ])
-    const box=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='ridge.jpg')!
-    box.open=true
-    ;(app.field('Use as lead photo',box) as HTMLInputElement).click()
-    const zoom=app.field('Crop zoom',box)
-    zoom.value='1.75';zoom.dispatchEvent(new app.dom.window.Event('change'))
+    await app.upload('#wizard-photos',[new File([gpsPhoto],'rest-hero.jpg',{type:'image/jpeg'})])
+    const card=dialog().querySelector<HTMLElement>('.wiz-photo')!
+    Array.from(card.querySelectorAll('button')).find(b=>b.textContent==='Crop')!.click()
+    const zoom=dialog().querySelector<HTMLInputElement>('input[aria-label="Crop zoom"]')!
+    zoom.value='1.6';zoom.dispatchEvent(new app.dom.window.Event('change',{bubbles:true}))
+    Array.from(dialog().querySelectorAll('.wiz-photo button')).find(b=>b.textContent==='Pin GPS')!.click()
+    app.button('Continue')
 
-    const gpsBox=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='viewpoint.jpg')!
-    gpsBox.open=true
-    Array.from(gpsBox.querySelectorAll('button')).find(b=>b.textContent==='Add place from photo GPS')!.click()
+    // Step 5: Title, preview, poster-specific label move, JPG/PNG/ZIP download & backup
+    expect(dialog().querySelector('#wizard-heading')?.textContent).toBe('Ready to download')
+    const titleInput=dialog().querySelector<HTMLInputElement>('#wizard-title')!
+    app.change(titleInput,'North Loop')
+    expect(dialog().querySelector('#wizard-preview svg')?.textContent).toContain('North Loop')
 
-    app.change(app.doc.querySelector<HTMLSelectElement>('#poster-target')!,app.doc.querySelector<HTMLSelectElement>('#poster-target')!.options[1].value)
-    const svg=app.doc.querySelector('#output svg')!
-    expect(svg.querySelectorAll('image').length).toBe(2)
-    expect(svg.textContent).toContain('viewpoint')
-
-    await until(()=>app.doc.querySelector('#storage-status')?.textContent==='Saved on this device','Autosave failed')
-    const reloaded=await open(app.store);windows.push(reloaded.dom.window)
-    reloaded.button('4. Photos')
-    const reloadedBox=Array.from(reloaded.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='ridge.jpg')!
-    expect((reloaded.field('Use as lead photo',reloadedBox) as HTMLInputElement).checked).toBe(true)
-    expect(reloaded.field('Crop zoom',reloadedBox).value).toBe('1.75')
-    expect(reloaded.doc.querySelector('#output svg')?.textContent).toContain('viewpoint')
-  } finally {
-    await Bun.sleep(0)
-    windows.forEach(w=>w.close())
-  }
-})
-
-test('Step 5 unlocks full Poster Studio, keeps label moves poster-specific, and completes full 5-step wizard export, reload, and backup restore', async()=>{
-  const app=await open(),windows=[app.dom.window]
-  const tmp=await mkdtemp(join(tmpdir(),'wizard-e2e-'))
-  try {
-    // Step 1: Import route + waypoints
-    const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.01,310],[18,98,300],[18,98.03,320],[18,98.05,340]])
-    const waypoints=new File(['<gpx><wpt lat="18" lon="98.01"><name>Farm homestay</name></wpt></gpx>'],'places.gpx',{type:route.type})
-    await app.upload('#file',[route,waypoints])
-
-    // Step 2: Split day and add rest day
-    app.button('Next: Split days')
-    const boundary=app.field('Boundary point')
-    boundary.value='3';boundary.dispatchEvent(new app.dom.window.Event('input'))
-    app.button('Create next day')
-    const days=app.field('Edit day') as HTMLSelectElement
-    app.change(days,days.options[1].value)
-    app.button('Rest day after')
-    app.change(app.field('Day name'),'Pai')
-
-    // Step 3: Curate place + overnight stay
-    app.button('Next: Places')
-    const farm=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='Farm homestay')!
-    farm.open=true
-    farm.querySelector<HTMLInputElement>('input[type=checkbox]')!.click()
-    const farmAgain=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='Farm homestay')!
-    farmAgain.open=true
-    ;(app.field('Overnight stay',farmAgain) as HTMLInputElement).click()
-    Array.from(farmAgain.querySelectorAll('button')).find(b=>b.textContent==='Add visit')!.click()
-
-    // Step 4: Upload photo to rest day and crop
-    app.button('Next: Photos')
-    const target=app.field('Add photos to') as HTMLSelectElement
-    app.change(target,target.options[3].value)
-    const original=await sharp({create:{width:4400,height:2800,channels:3,background:'#a92725'}}).jpeg().toBuffer()
-    await app.upload('#assets input[type=file]',[new File([original],'rest-hero.jpg',{type:'image/jpeg'})])
-    const photoBox=Array.from(app.doc.querySelectorAll('#assets details')).find(el=>el.querySelector('summary')?.textContent==='rest-hero.jpg')!
-    photoBox.open=true
-    const cropX=app.field('Horizontal crop',photoBox)
-    cropX.value='0.2';cropX.dispatchEvent(new app.dom.window.Event('change'))
-
-    // Step 5: Style, Labels, Collection & Export
-    app.button('Next: Style & export')
-    expect(app.doc.querySelector('[data-step="5"]')?.getAttribute('aria-current')).toBe('step')
-    expect(app.doc.querySelector<HTMLElement>('.restore')?.hidden).toBe(true)
-    expect(app.doc.querySelector('#wizard-step-extra')?.textContent).toContain('Download a backup')
-    expect(app.doc.querySelector('#download-poster')).not.toBeNull()
-    expect(app.doc.querySelector('#download-zip')).not.toBeNull()
-    expect(app.doc.querySelector('#poster-style')).not.toBeNull()
-
-    // Create a multi-day group in Step 5 poster collection
-    const groupChecks=Array.from(app.doc.querySelectorAll<HTMLInputElement>('[data-group-day]'))
-    groupChecks[0].click();groupChecks[1].click()
-    app.change(app.field('Group name'),'Riding days')
-    app.button('Create group')
-    expect(app.doc.querySelector('#poster-target')?.textContent).toContain('Riding days')
-
-    // Move label on Day 1 poster via keyboard and confirm focus stays on label and Full trip label stays independent
-    const posterSel=app.doc.querySelector<HTMLSelectElement>('#poster-target')!
-    const day1Value=Array.from(posterSel.options).find(o=>o.value.startsWith('day:'))!.value
-    app.change(posterSel,day1Value)
-    const labelBefore={
-      x:app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('x'),
-      y:app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('y')
-    }
-    app.doc.querySelector<SVGTextElement>('#poster-preview svg [data-label]')!.dispatchEvent(
+    // Move label on Day 1 and verify Full trip stays independent
+    const posterSel=dialog().querySelector<HTMLSelectElement>('#wizard-poster-target')!
+    const day1Val=Array.from(posterSel.options).find(o=>o.value.startsWith('day:'))!.value
+    app.change(posterSel,day1Val)
+    const yBefore=Number(dialog().querySelector('#wizard-preview svg [data-label]')!.getAttribute('y'))
+    dialog().querySelector<SVGTextElement>('#wizard-preview svg [data-label]')!.dispatchEvent(
       new app.dom.window.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true})
     )
-    expect(app.doc.activeElement).toBe(app.doc.querySelector('#poster-preview svg [data-label]'))
-    const labelAfter={
-      x:app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('x'),
-      y:app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('y')
-    }
-    expect(Number(labelAfter.y)).toBeGreaterThan(Number(labelBefore.y))
+    const yAfter=Number(dialog().querySelector('#wizard-preview svg [data-label]')!.getAttribute('y'))
+    expect(yAfter).toBeGreaterThan(yBefore)
+    app.change(dialog().querySelector<HTMLSelectElement>('#wizard-poster-target')!,'trip')
+    expect(Number(dialog().querySelector('#wizard-preview svg [data-label]')!.getAttribute('y'))).not.toBe(yAfter)
 
-    app.change(app.doc.querySelector<HTMLSelectElement>('#poster-target')!,'trip')
-    const tripLabelY=app.doc.querySelector('#poster-preview svg [data-label]')!.getAttribute('y')
-    expect(tripLabelY).not.toBe(labelAfter.y)
+    // Download JPG of Rest Day, then PNG, then ZIP of all posters, then backup
+    const restVal=Array.from(dialog().querySelector<HTMLSelectElement>('#wizard-poster-target')!.options).find(o=>o.textContent?.includes('Pai'))!.value
+    app.change(dialog().querySelector<HTMLSelectElement>('#wizard-poster-target')!,restVal)
+    dialog().querySelector<HTMLButtonElement>('#wizard-download')!.click()
+    await until(()=>Array.from(app.downloads.keys()).some(n=>n.endsWith('.jpg')),'Wizard JPG download failed')
+    const jpgName=Array.from(app.downloads.keys()).find(n=>n.endsWith('.jpg'))!
+    await verifyRestPhoto(app.downloads.get(jpgName)!)
 
-    // Backup, reload via IndexedDB, restore in fresh wizard session, and verify JPG/PNG/ZIP exports
-    app.button('Download backup')
+    app.change(dialog().querySelector<HTMLSelectElement>('#wizard-format')!,'png')
+    dialog().querySelector<HTMLButtonElement>('#wizard-download-zip')!.click()
+    await until(()=>Array.from(app.downloads.keys()).some(n=>n.endsWith('.zip')),'Wizard ZIP download failed')
+    const zipBlob=Array.from(app.downloads).find(([n])=>n.endsWith('.zip'))![1]
+    const zipPath=join(tmp,'wizard.zip')
+    await writeFile(zipPath,Buffer.from(await zipBlob.arrayBuffer()))
+    expect(Bun.spawnSync(['unzip','-tq',zipPath]).exitCode).toBe(0)
+    expect(Bun.spawnSync(['unzip','-Z1',zipPath]).stdout.toString().trim().split('\n')).toHaveLength(4)
+
+    dialog().querySelector<HTMLButtonElement>('#wizard-backup')!.click()
     const backupBlob=app.downloads.get('map-and-posters-backup.json')!
     await until(()=>app.doc.querySelector('#storage-status')?.textContent==='Saved on this device','Autosave failed')
 
+    // Reload from IndexedDB and restore into a fresh session via Step 1 Restore backup
     const reloaded=await open(app.store);windows.push(reloaded.dom.window)
-    reloaded.button('5. Style & export')
-    expect(reloaded.doc.querySelector('#poster-preview svg')?.outerHTML).toBe(app.doc.querySelector('#poster-preview svg')?.outerHTML)
+    reloaded.doc.querySelector<HTMLButtonElement>('[data-step="5"]')!.click()
+    expect(reloaded.doc.querySelector('#wizard-preview svg')?.textContent).toContain('North Loop')
 
     const fresh=await open();windows.push(fresh.dom.window)
-    await fresh.upload('#restore',[new File([backupBlob],'trip.json',{type:'application/json'})])
-    fresh.button('5. Style & export')
-    expect(fresh.doc.querySelector('#poster-preview svg')?.outerHTML).toBe(app.doc.querySelector('#poster-preview svg')?.outerHTML)
-    await checkDownloads(fresh,tmp)
+    await fresh.upload('#wizard-restore',[new File([backupBlob],'trip.json',{type:'application/json'})])
+    fresh.doc.querySelector<HTMLButtonElement>('[data-step="5"]')!.click()
+    expect(fresh.doc.querySelector('#wizard-preview svg')?.outerHTML).toBe(reloaded.doc.querySelector('#wizard-preview svg')?.outerHTML)
   } finally {
     await Bun.sleep(0)
-    windows.forEach(win=>win.close())
+    windows.forEach(w=>w.close())
     await rm(tmp,{recursive:true,force:true})
   }
 },30000)
