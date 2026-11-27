@@ -1,6 +1,6 @@
 import { addPlace, readCoordinates, readPhoto, type Photo, type Place } from './assets'
 import { visitCandidates } from './assets-ui'
-import { combinedRanges, dayName, dayTrack, insertRestDay, moveRecording, possibleOverlap, setBoundary, type Day, type PointRef } from './itinerary'
+import { combinedRanges, dayName, insertRestDay, moveRecording, possibleOverlap, setBoundary, type Day, type PointRef } from './itinerary'
 import { downloadBlob, posterFiles, rasterize, slug, wireLabelEditing, zipFiles } from './output'
 import { availablePosters, renderPoster } from './poster'
 import type { Project } from './project'
@@ -15,12 +15,12 @@ export interface WizardHooks {
   onExit: () => void
 }
 
-const STEPS = [
-  { id: 1, title: 'Add your GPX', label: 'Step 1: Add your GPX' },
-  { id: 2, title: 'Split into days', label: 'Step 2: Split into days' },
-  { id: 3, title: 'Pick stops', label: 'Step 3: Pick stops' },
-  { id: 4, title: 'Add photos', label: 'Step 4: Add photos' },
-  { id: 5, title: 'Ready to download', label: 'Step 5: Ready to download' },
+const STEP_TITLES = [
+  'Add your GPX',
+  'Split into days',
+  'Pick stops',
+  'Add photos',
+  'Ready to download',
 ] as const
 
 type Sample = PointRef & { x: number, y: number, km: number, run: number }
@@ -45,21 +45,27 @@ function svgEl<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<strin
   return node
 }
 
-function routeSilhouette(project: Project): HTMLElement | null {
-  const segments = project.recordings.filter(r => r.included).flatMap(r => r.track)
+function routeSilhouette(segments: Point[][], stroke = '#206248'): HTMLElement | null {
   if (!segments.length) return null
   const bounds = layout(segments)
   const scale = Math.min(340 / (bounds.east - bounds.west || 1e-8), 116 / (bounds.north - bounds.south || 1e-8))
   const px = (x: number) => (180 + (x - (bounds.east + bounds.west) / 2) * scale).toFixed(1)
   const py = (y: number) => (70 - (y - (bounds.north + bounds.south) / 2) * scale).toFixed(1)
-  const svg = svgEl('svg', { viewBox: '0 0 360 140', class: 'wiz-mini-map', 'aria-label': 'Imported route preview' })
+  const svg = svgEl('svg', { viewBox: '0 0 360 140', class: 'wiz-mini-map', 'aria-label': 'Route preview' })
   for (const line of bounds.lines) {
     const d = line.map((p, i) => (i ? 'L' : 'M') + px(p.x) + ',' + py(p.y)).join('')
-    svg.append(svgEl('path', { d, fill: 'none', stroke: '#206248', 'stroke-width': '3', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }))
+    svg.append(svgEl('path', { d, fill: 'none', stroke, 'stroke-width': '3', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }))
   }
   const wrap = el('div', '', 'wiz-route-card')
   wrap.append(svg, el('span', bounds.km.toFixed(1) + ' km', 'wiz-badge'))
   return wrap
+}
+
+function overnightPosition(project: Project, place: Place, day: Day) {
+  if (day.rest) return undefined
+  const end = day.ranges.filter(r => project.recordings.some(rec => rec.id === r.recordingId && rec.included)).at(-1)
+  const pass = visitCandidates(project, day, place).at(-1)
+  return end ? { recordingId: end.recordingId, segment: end.segment, point: end.end } : pass?.position
 }
 
 export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
@@ -67,6 +73,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
   const content = dialog.querySelector<HTMLElement>('#wizard-content')!
   const statusEl = dialog.querySelector<HTMLElement>('#wizard-status')!
   const counterEl = dialog.querySelector<HTMLElement>('#wizard-counter')!
+  const foot = dialog.querySelector<HTMLElement>('#wizard-foot')!
   const backBtn = dialog.querySelector<HTMLButtonElement>('#wizard-back')!
   const nextBtn = dialog.querySelector<HTMLButtonElement>('#wizard-next')!
   const exitBtn = dialog.querySelector<HTMLButtonElement>('#wizard-exit')!
@@ -85,15 +92,20 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
 
   function show() {
     if (isOpen()) return
+    // Populate heading and content before showModal() so screen readers announce the accessible name immediately.
+    renderContent()
     if (typeof dialog.showModal === 'function') dialog.showModal()
     else dialog.setAttribute('open', '')
-    render()
+    heading.focus()
   }
 
   function hide() {
     if (!isOpen()) return
     if (typeof dialog.close === 'function') dialog.close('exit')
-    else dialog.removeAttribute('open')
+    else {
+      dialog.removeAttribute('open')
+      hooks.onExit()
+    }
   }
 
   dialog.addEventListener('close', () => {
@@ -101,16 +113,13 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     hooks.onExit()
   })
 
-  exitBtn.onclick = () => {
-    hide()
-    if (typeof dialog.close !== 'function') hooks.onExit()
-  }
+  exitBtn.onclick = () => hide()
 
-  function go(next: number, focus = true) {
-    step = Math.max(1, Math.min(STEPS.length, next))
+  function go(next: number) {
+    step = Math.max(1, Math.min(STEP_TITLES.length, next))
     statusText = ''
     render()
-    if (focus) heading.focus()
+    heading.focus()
   }
 
   dialog.querySelectorAll<HTMLButtonElement>('[data-step]').forEach(button => {
@@ -134,12 +143,28 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     setStatus('Reading GPX…')
     render()
     try {
-      const msg = await hooks.importGpx(files)
-      setStatus(msg)
+      setStatus(await hooks.importGpx(files))
     } finally {
       busy = false
       render()
     }
+  }
+
+  function restoreLabel() {
+    const restoreInput = el('input')
+    restoreInput.id = 'wizard-restore'
+    restoreInput.type = 'file'
+    restoreInput.accept = '.json'
+    restoreInput.onchange = async () => {
+      const file = restoreInput.files?.[0]
+      restoreInput.value = ''
+      if (!file) return
+      setStatus(await hooks.restoreBackup(file))
+      render()
+    }
+    const label = el('label', 'Restore backup', 'wiz-link-file')
+    label.append(restoreInput)
+    return label
   }
 
   function renderStep1(project: Project) {
@@ -171,20 +196,6 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
         void handleGpxFiles(files)
       }
 
-      const restoreInput = el('input')
-      restoreInput.id = 'wizard-restore'
-      restoreInput.type = 'file'
-      restoreInput.accept = '.json'
-      restoreInput.onchange = async () => {
-        const file = restoreInput.files?.[0]
-        restoreInput.value = ''
-        if (!file) return
-        setStatus(await hooks.restoreBackup(file))
-        render()
-      }
-      const restoreLbl = el('label', 'Restore backup', 'wiz-link-file')
-      restoreLbl.append(restoreInput)
-
       const restBtn = btn('Start with a rest day', () => {
         const rest = insertRestDay(project, 0)
         activeDayId = rest.id
@@ -193,12 +204,12 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       }, 'wiz-link')
 
       const alt = el('div', '', 'wiz-alt-links')
-      alt.append(restoreLbl, el('span', '·', 'wiz-sep'), restBtn)
+      alt.append(restoreLabel(), el('span', '·', 'wiz-sep'), restBtn)
       content.append(zone, alt)
       return
     }
 
-    const preview = routeSilhouette(project)
+    const preview = routeSilhouette(project.recordings.filter(r => r.included).flatMap(r => r.track))
     if (preview) content.append(preview)
 
     if (project.recordings.length) {
@@ -234,21 +245,8 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
 
     const addMore = el('label', '+ Add GPX', 'wiz-ghost-file')
     addMore.append(gpxInput)
-    const restoreInput = el('input')
-    restoreInput.id = 'wizard-restore'
-    restoreInput.type = 'file'
-    restoreInput.accept = '.json'
-    restoreInput.onchange = async () => {
-      const file = restoreInput.files?.[0]
-      restoreInput.value = ''
-      if (!file) return
-      setStatus(await hooks.restoreBackup(file))
-      render()
-    }
-    const restoreLbl = el('label', 'Restore backup', 'wiz-link-file')
-    restoreLbl.append(restoreInput)
     const tools = el('div', '', 'wiz-inline-tools')
-    tools.append(addMore, restoreLbl)
+    tools.append(addMore, restoreLabel())
     content.append(tools)
   }
 
@@ -310,7 +308,8 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       }))
     })
     if (samples.length < 3) {
-      content.append(el('p', bounds.km.toFixed(1) + ' km', 'wiz-meta'))
+      const card = routeSilhouette(segments, day.color)
+      if (card) content.append(card)
       return
     }
 
@@ -401,10 +400,13 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     if (existing) {
       project.visits = project.visits.filter(v => v.id !== existing.id)
     } else {
-      const end = day.ranges.filter(r => project.recordings.some(rec => rec.id === r.recordingId && rec.included)).at(-1)
-      const pass = visitCandidates(project, day, place).at(-1)
-      const position = end ? { recordingId: end.recordingId, segment: end.segment, point: end.end } : pass?.position
-      project.visits.push({ id: crypto.randomUUID(), placeId: place.id, dayId: day.id, overnight: true, position })
+      project.visits.push({
+        id: crypto.randomUUID(),
+        placeId: place.id,
+        dayId: day.id,
+        overnight: true,
+        position: overnightPosition(project, place, day),
+      })
     }
     mutate()
   }
@@ -437,7 +439,11 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
             sel.value = chosenDay.id
             sel.onchange = () => {
               chosenDay = project.days.find(d => d.id === sel.value) || project.days[0]
-              if (existing) { existing.dayId = chosenDay.id; mutate() }
+              if (existing) {
+                existing.dayId = chosenDay.id
+                existing.position = overnightPosition(project, place, chosenDay)
+                mutate()
+              }
             }
             actions.append(sel)
           }
@@ -451,11 +457,14 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       content.append(list)
     }
 
-    const openAdd = showAddPlace || project.places.length === 0
-    if (!openAdd) {
-      content.append(btn('+ Add place', () => { showAddPlace = true; render() }, 'wiz-ghost'))
-      return
-    }
+    const toggleAdd = btn(showAddPlace ? 'Cancel' : '+ Add place', () => {
+      showAddPlace = !showAddPlace
+      setStatus('')
+      render()
+    }, 'wiz-ghost')
+    content.append(toggleAdd)
+
+    if (!showAddPlace) return
     const form = el('div', '', 'wiz-add-row')
     const nameIn = el('input', '', 'wiz-input')
     nameIn.placeholder = 'Place name'
@@ -470,7 +479,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       showAddPlace = false
       setStatus('')
       mutate()
-    }, 'wiz-ghost')
+    }, 'wiz-primary')
     form.append(nameIn, locIn, add)
     content.append(form)
   }
@@ -546,13 +555,23 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       cropBtn.setAttribute('aria-pressed', String(expandedCropPhotoId === photo.id))
       meta.append(lead, cropBtn)
 
-      if (photo.gps && !photo.placeId) {
-        meta.append(btn('Pin GPS', () => {
-          const place = addPlace(project, photo.name.replace(/\.[^.]+$/, ''), photo.gps!)
-          photo.placeId = place.id
-          if (photo.dayId) project.visits.push({ id: crypto.randomUUID(), placeId: place.id, dayId: photo.dayId, overnight: false })
+      if (photo.gps) {
+        const pinned = Boolean(photo.placeId && project.places.some(p => p.id === photo.placeId))
+        const pinBtn = btn('Pin GPS', () => {
+          if (pinned) {
+            const placeId = photo.placeId!
+            project.places = project.places.filter(p => p.id !== placeId)
+            project.visits = project.visits.filter(v => v.placeId !== placeId)
+            delete photo.placeId
+          } else {
+            const place = addPlace(project, photo.name.replace(/\.[^.]+$/, ''), photo.gps!)
+            photo.placeId = place.id
+            if (photo.dayId) project.visits.push({ id: crypto.randomUUID(), placeId: place.id, dayId: photo.dayId, overnight: false })
+          }
           mutate()
-        }, 'wiz-chip'))
+        }, 'wiz-chip')
+        pinBtn.setAttribute('aria-pressed', String(pinned))
+        meta.append(pinBtn)
       }
       const del = btn('×', () => { project.photos.splice(i, 1); mutate() }, 'wiz-icon')
       del.setAttribute('aria-label', 'Remove ' + photo.name)
@@ -612,6 +631,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     }
 
     const phone = el('input')
+    phone.id = 'wizard-phone'
     phone.type = 'checkbox'
     phone.checked = state.phone
     phone.onchange = () => { state.phone = phone.checked; mutate() }
@@ -625,7 +645,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     preview.id = 'wizard-preview'
     if (state.phone) preview.classList.add('is-phone')
     preview.innerHTML = svgText
-    wireLabelEditing(preview.querySelector<SVGSVGElement>('svg')!, target.key, state, mutate)
+    wireLabelEditing(preview.querySelector<SVGSVGElement>('svg')!, target.key, state, mutate, dialog)
     content.append(preview)
 
     const actions = el('div', '', 'wiz-export-bar')
@@ -679,13 +699,11 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     content.append(actions)
   }
 
-  function render() {
-    if (!isOpen()) return
+  function renderContent() {
     const project = hooks.getProject()
-    const info = STEPS[step - 1]
     dialog.dataset.step = String(step)
-    counterEl.textContent = step + ' / ' + STEPS.length
-    heading.textContent = info.title
+    counterEl.textContent = step + ' / ' + STEP_TITLES.length
+    heading.textContent = STEP_TITLES[step - 1]
     statusEl.textContent = statusText
     dialog.querySelectorAll<HTMLButtonElement>('[data-step]').forEach(dot => {
       const num = Number(dot.dataset.step)
@@ -694,35 +712,32 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       dot.classList.toggle('is-done', num < step)
     })
 
+    const stepRenderers = [renderStep1, renderStep2, renderStep3, renderStep4, renderStep5]
     content.replaceChildren()
-    if (step === 1) renderStep1(project)
-    else if (step === 2) renderStep2(project)
-    else if (step === 3) renderStep3(project)
-    else if (step === 4) renderStep4(project)
-    else renderStep5(project)
+    stepRenderers[step - 1](project)
 
-    backBtn.hidden = step === 1
     const hasContent = project.recordings.length > 0 || project.days.length > 0 || project.photos.length > 0
+    backBtn.hidden = step === 1
     if (step === 1) {
       nextBtn.hidden = !hasContent
       nextBtn.textContent = 'Continue'
+      nextBtn.className = 'wiz-primary'
       nextBtn.onclick = () => go(2)
-    } else if (step < 5) {
+    } else if (step < STEP_TITLES.length) {
       nextBtn.hidden = false
       const skip = (step === 3 && !project.places.some(p => p.visible)) || (step === 4 && !project.photos.length)
       nextBtn.textContent = skip ? 'Skip' : 'Continue'
       nextBtn.className = skip ? 'wiz-ghost' : 'wiz-primary'
       nextBtn.onclick = () => go(step + 1)
     } else {
-      nextBtn.hidden = false
-      nextBtn.textContent = 'Open full editor'
-      nextBtn.className = 'wiz-ghost'
-      nextBtn.onclick = () => {
-        hide()
-        if (typeof dialog.close !== 'function') hooks.onExit()
-      }
+      nextBtn.hidden = true
     }
-    if (step === 1) nextBtn.className = 'wiz-primary'
+    foot.hidden = backBtn.hidden && nextBtn.hidden
+  }
+
+  function render() {
+    if (!isOpen()) return
+    renderContent()
   }
 
   return { show, hide, render, isOpen }

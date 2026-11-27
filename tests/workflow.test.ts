@@ -417,19 +417,28 @@ test('centered wizard walks Steps 1 → 5: split repeated pass, rest day, stops 
     const gpsPhoto=Buffer.concat([baseJpeg.subarray(0,2),app1,baseJpeg.subarray(2)])
     await app.upload('#wizard-photos',[new File([gpsPhoto],'rest-hero.jpg',{type:'image/jpeg'})])
     const card=dialog().querySelector<HTMLElement>('.wiz-photo')!
-    Array.from(card.querySelectorAll('button')).find(b=>b.textContent==='Crop')!.click()
+    const leadBtn=Array.from(card.querySelectorAll('button')).find(b=>b.textContent==='Lead')!
+    leadBtn.click()
+    expect(Array.from(dialog().querySelectorAll('.wiz-photo button')).find(b=>b.textContent==='Lead')?.getAttribute('aria-pressed')).toBe('true')
+    Array.from(dialog().querySelectorAll('.wiz-photo button')).find(b=>b.textContent==='Crop')!.click()
     const zoom=dialog().querySelector<HTMLInputElement>('input[aria-label="Crop zoom"]')!
     zoom.value='1.6';zoom.dispatchEvent(new app.dom.window.Event('change',{bubbles:true}))
     Array.from(dialog().querySelectorAll('.wiz-photo button')).find(b=>b.textContent==='Pin GPS')!.click()
+    expect(Array.from(dialog().querySelectorAll('.wiz-photo button')).find(b=>b.textContent==='Pin GPS')?.getAttribute('aria-pressed')).toBe('true')
     app.button('Continue')
 
-    // Step 5: Title, preview, poster-specific label move, JPG/PNG/ZIP download & backup
+    // Step 5: Title, phone toggle, preview, poster-specific label move (focus stays in dialog!), JPG/PNG/ZIP download & backup
     expect(dialog().querySelector('#wizard-heading')?.textContent).toBe('Ready to download')
+    expect(dialog().querySelector<HTMLButtonElement>('#wizard-next')?.hidden).toBe(true)
     const titleInput=dialog().querySelector<HTMLInputElement>('#wizard-title')!
     app.change(titleInput,'North Loop')
     expect(dialog().querySelector('#wizard-preview svg')?.textContent).toContain('North Loop')
 
-    // Move label on Day 1 and verify Full trip stays independent
+    const phoneToggle=dialog().querySelector<HTMLInputElement>('#wizard-phone')!
+    phoneToggle.click()
+    expect(dialog().querySelector('#wizard-preview')?.classList.contains('is-phone')).toBe(true)
+
+    // Move label on Day 1 and verify focus stays inside #wizard-preview and Full trip stays independent
     const posterSel=dialog().querySelector<HTMLSelectElement>('#wizard-poster-target')!
     const day1Val=Array.from(posterSel.options).find(o=>o.value.startsWith('day:'))!.value
     app.change(posterSel,day1Val)
@@ -437,12 +446,13 @@ test('centered wizard walks Steps 1 → 5: split repeated pass, rest day, stops 
     dialog().querySelector<SVGTextElement>('#wizard-preview svg [data-label]')!.dispatchEvent(
       new app.dom.window.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true})
     )
+    expect(app.doc.activeElement).toBe(dialog().querySelector('#wizard-preview svg [data-label]'))
     const yAfter=Number(dialog().querySelector('#wizard-preview svg [data-label]')!.getAttribute('y'))
     expect(yAfter).toBeGreaterThan(yBefore)
     app.change(dialog().querySelector<HTMLSelectElement>('#wizard-poster-target')!,'trip')
     expect(Number(dialog().querySelector('#wizard-preview svg [data-label]')!.getAttribute('y'))).not.toBe(yAfter)
 
-    // Download JPG of Rest Day, then PNG, then ZIP of all posters, then backup
+    // Download JPG of Rest Day, then individual PNG, then ZIP of all posters (decode members), then backup
     const restVal=Array.from(dialog().querySelector<HTMLSelectElement>('#wizard-poster-target')!.options).find(o=>o.textContent?.includes('Pai'))!.value
     app.change(dialog().querySelector<HTMLSelectElement>('#wizard-poster-target')!,restVal)
     dialog().querySelector<HTMLButtonElement>('#wizard-download')!.click()
@@ -451,13 +461,28 @@ test('centered wizard walks Steps 1 → 5: split repeated pass, rest day, stops 
     await verifyRestPhoto(app.downloads.get(jpgName)!)
 
     app.change(dialog().querySelector<HTMLSelectElement>('#wizard-format')!,'png')
+    dialog().querySelector<HTMLButtonElement>('#wizard-download')!.click()
+    await until(()=>Array.from(app.downloads.keys()).some(n=>n.endsWith('.png')),'Wizard PNG download failed')
+    const pngName=Array.from(app.downloads.keys()).find(n=>n.endsWith('.png'))!
+    const pngMeta=await sharp(Buffer.from(await app.downloads.get(pngName)!.arrayBuffer())).metadata()
+    expect(pngMeta.format).toBe('png')
+    expect(pngMeta.width).toBe(1080)
+
     dialog().querySelector<HTMLButtonElement>('#wizard-download-zip')!.click()
     await until(()=>Array.from(app.downloads.keys()).some(n=>n.endsWith('.zip')),'Wizard ZIP download failed')
     const zipBlob=Array.from(app.downloads).find(([n])=>n.endsWith('.zip'))![1]
     const zipPath=join(tmp,'wizard.zip')
     await writeFile(zipPath,Buffer.from(await zipBlob.arrayBuffer()))
     expect(Bun.spawnSync(['unzip','-tq',zipPath]).exitCode).toBe(0)
-    expect(Bun.spawnSync(['unzip','-Z1',zipPath]).stdout.toString().trim().split('\n')).toHaveLength(4)
+    const zipNames=Bun.spawnSync(['unzip','-Z1',zipPath]).stdout.toString().trim().split('\n')
+    expect(zipNames).toHaveLength(4)
+    for(const name of zipNames) {
+      const extracted=Bun.spawnSync(['unzip','-p',zipPath,name])
+      expect(extracted.exitCode).toBe(0)
+      const m=await sharp(extracted.stdout).metadata()
+      expect(m.format).toBe('png')
+      expect(m.width).toBe(1080)
+    }
 
     dialog().querySelector<HTMLButtonElement>('#wizard-backup')!.click()
     const backupBlob=app.downloads.get('map-and-posters-backup.json')!

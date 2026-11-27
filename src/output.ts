@@ -140,7 +140,7 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void) {
       onChange()
     }
   }
-  wireLabelEditing(host.querySelector<SVGSVGElement>('#poster-preview svg')!,target.key,state,onChange)
+  wireLabelEditing(host.querySelector<SVGSVGElement>('#poster-preview svg')!,target.key,state,onChange,host)
   const files=posterFiles(project,targets)
   const individual=get<HTMLButtonElement>('#download-poster'), archive=get<HTMLButtonElement>('#download-zip')
   const selected=files.filter(f=>state.selected.includes(f.target.key))
@@ -169,7 +169,7 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void) {
   archive.onclick=()=>void run(true)
 }
 
-export function wireLabelEditing(svg:SVGSVGElement,key:string,state:OutputState,onChange:()=>void) {
+export function wireLabelEditing(svg:SVGSVGElement,key:string,state:OutputState,onChange:()=>void,scope:ParentNode=document) {
   const save=(id:string,x:number,y:number)=>{
     const labels=state.labels[key] ||= {}
     labels[id]={x,y}
@@ -185,7 +185,7 @@ export function wireLabelEditing(svg:SVGSVGElement,key:string,state:OutputState,
       e.preventDefault()
       save(id,Number(label.getAttribute('x'))+delta[e.key][0],Number(label.getAttribute('y'))+delta[e.key][1])
       const escaped=typeof CSS==='object' && typeof CSS.escape==='function'?CSS.escape(id):id.replace(/[^\w-]/g,'\\$&')
-      document.querySelector<SVGTextElement>('[data-label="'+escaped+'"]')?.focus()
+      scope.querySelector<SVGTextElement>('[data-label="'+escaped+'"]')?.focus()
     }
     label.onpointerdown=e=>{
       const matrix=svg.getScreenCTM()
