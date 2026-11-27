@@ -1,5 +1,5 @@
 import {expect,test} from 'bun:test'
-import {appendRecording,combinedRanges,dayName,dayTrack,importRecording,insertRestDay,joinDays,moveRecording,possibleOverlap,setBoundary,type Itinerary} from '../src/itinerary'
+import {appendRecording,combinedRanges,dayName,dayTrack,importRecording,insertRestDay,joinDays,moveRecording,possibleOverlap,removeDay,setBoundary,type Itinerary} from '../src/itinerary'
 import {mountItinerary} from '../src/itinerary-ui'
 import {layout} from '../src/track'
 
@@ -114,4 +114,17 @@ test('a photo-only rest day can start an itinerary before any GPX is imported',(
   expect(p.days[0].rest).toBe(true)
   importRecording(p,recording([stamp(16,12),stamp(16,13)]),'next')
   expect(p.days.map(d=>d.rest)).toEqual([true,false])
+})
+
+test('removeDay deletes either a rest day or a riding day and marks manualOrder',()=>{
+  const p=empty()
+  importRecording(p,recording([stamp(16,12),stamp(16,13),stamp(16,14),stamp(16,15)]),'loop')
+  setBoundary(p,p.days[0],null,{recordingId:p.recordings[0].id,segment:0,point:2})
+  insertRestDay(p,1,'Pai')
+  expect(p.days.map(d=>d.rest)).toEqual([false,true,false])
+  removeDay(p,p.days[1])
+  expect(p.days.map(d=>d.rest)).toEqual([false,false])
+  removeDay(p,p.days[0])
+  expect(p.days).toHaveLength(1)
+  expect(p.manualOrder).toBe(true)
 })

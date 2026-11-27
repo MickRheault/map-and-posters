@@ -128,7 +128,7 @@ export function mountAssets(host:HTMLElement,project:AssetProject,onChange:()=>v
   notice.setAttribute('role','status')
   const mapBox=details('Drop a pin on the map',project,'map')
   mapBox.ontoggle=()=>{
-    if (!mapBox.open || mapBox.querySelector('svg')) return
+    if (!mapBox.isConnected || !mapBox.open || mapBox.querySelector('svg')) return
     mapBox.append(pinMap(project,coords=>{
       location.value=coords.lat.toFixed(7)+', '+coords.lon.toFixed(7)
       notice.textContent='Pin positioned. Choose Add place to save.'
@@ -181,7 +181,7 @@ export function mountAssets(host:HTMLElement,project:AssetProject,onChange:()=>v
         if(overnight.checked && end) position.value='0'
       }
       // Calculate pass choices when a place is opened, including keyboard interaction.
-      box.ontoggle=()=>{if(box.open) options()}
+      box.ontoggle=()=>{if(box.isConnected && box.open) options()}
       day.onchange=options
       overnight.onchange=()=>{if(overnight.checked && refs.length) position.value='0'}
       box.append(label('Visit day',day),label('Trip position',position),label('Overnight stay',overnight),button('Add visit',()=>{

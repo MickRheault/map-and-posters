@@ -1,5 +1,5 @@
 import { validCoordinates, type Assets } from './assets'
-import type { Itinerary } from './itinerary'
+import { removeDay, type Itinerary } from './itinerary'
 import { defaultOutput, type OutputState } from './output'
 
 export type SourceFile = { name: string, original: string }
@@ -13,6 +13,56 @@ export function newProject(): Project {
     recordings: [], days: [], places: [], visits: [], photos: [],
     sources: [], output: defaultOutput()
   }
+}
+
+export function deleteProjectDay(project: Project, dayId: string) {
+  const day = project.days.find(d => d.id === dayId)
+  if (!day || !removeDay(project, day)) return
+  project.visits = project.visits.filter(v => v.dayId !== dayId)
+  let hasTripHero = project.photos.some(p => p.dayId === '' && p.hero)
+  for (const photo of project.photos) {
+    if (photo.dayId !== dayId) continue
+    photo.dayId = ''
+    if (photo.hero && hasTripHero) photo.hero = false
+    else if (photo.hero) hasTripHero = true
+  }
+  const out = project.output
+  const removedKeys = new Set(['day:' + dayId])
+  out.groups = out.groups.filter(group => {
+    group.dayIds = group.dayIds.filter(id => id !== dayId)
+    if (group.dayIds.length) return true
+    removedKeys.add('group:' + group.id)
+    return false
+  })
+  if (removedKeys.has(out.active)) out.active = 'trip'
+  out.selected = out.selected.filter(key => !removedKeys.has(key))
+  for (const settings of [out.labels, out.placeVisibility, out.placeText]) {
+    if (!settings) continue
+    for (const key of removedKeys) delete settings[key]
+  }
+  const usedRecordings = new Set<string>()
+  for (const d of project.days) for (const r of d.ranges) usedRecordings.add(r.recordingId)
+  for (const v of project.visits) if (v.position) usedRecordings.add(v.position.recordingId)
+  project.recordings = project.recordings.filter(r => usedRecordings.has(r.id))
+}
+
+export function deleteProjectRecording(project: Project, recordingId: string) {
+  const rec = project.recordings.find(r => r.id === recordingId)
+  if (!rec) return
+  project.recordings = project.recordings.filter(r => r.id !== recordingId)
+  const sourceIndex = project.sources.findIndex(s => s.name === rec.name)
+  if (sourceIndex >= 0) project.sources.splice(sourceIndex, 1)
+  for (const visit of project.visits) {
+    if (visit.position?.recordingId === recordingId) delete visit.position
+  }
+  const emptyDays: string[] = []
+  for (const day of project.days) {
+    if (day.rest) continue
+    day.ranges = day.ranges.filter(r => r.recordingId !== recordingId)
+    if (!day.ranges.length) emptyDays.push(day.id)
+  }
+  for (const dayId of emptyDays) deleteProjectDay(project, dayId)
+  if (!project.recordings.length && !project.days.length) delete project.manualOrder
 }
 
 const format = 'map-and-posters'

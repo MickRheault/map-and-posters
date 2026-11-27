@@ -23,7 +23,7 @@ export function defaultOutput():OutputState {
   return {title:'My trip',credit:'',accent:'#196952',showDistance:true,showPeak:true,showProfile:true,phone:false,
     active:'trip',format:'jpg',selected:['trip'],groups:[],labels:{},placeVisibility:{}}
 }
-function slug(name:string) {
+export function slug(name:string) {
   return name.normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-|-$/g,'').slice(0,80) || 'poster'
 }
 export function posterFiles(project:Project,targets:PosterTarget[]) {
@@ -54,7 +54,7 @@ export async function rasterize(svg:string,format:OutputState['format']):Promise
     return blob
   } finally {URL.revokeObjectURL(url);canvas.width=canvas.height=0}
 }
-function download(blob:Blob,name:string) {
+export function downloadBlob(blob:Blob,name:string) {
   const a=document.createElement('a')
   a.href=URL.createObjectURL(blob);a.download=name
   document.body.append(a);a.click();a.remove()
@@ -140,7 +140,7 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void) {
       onChange()
     }
   }
-  wireLabelEditing(host.querySelector<SVGSVGElement>('#poster-preview svg')!,target.key,state,onChange)
+  wireLabelEditing(host.querySelector<SVGSVGElement>('#poster-preview svg')!,target.key,state,onChange,host)
   const files=posterFiles(project,targets)
   const individual=get<HTMLButtonElement>('#download-poster'), archive=get<HTMLButtonElement>('#download-zip')
   const selected=files.filter(f=>state.selected.includes(f.target.key))
@@ -157,9 +157,9 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void) {
           const blob=await rasterize(file.svg,format)
           entries.push({name:file.name,bytes:new Uint8Array(await blob.arrayBuffer())})
         }
-        download(zip(entries),archiveName)
+        downloadBlob(zip(entries),archiveName)
       }else{
-        download(await rasterize(svg,format),files.find(f=>f.target.key===target.key)!.name)
+        downloadBlob(await rasterize(svg,format),files.find(f=>f.target.key===target.key)!.name)
       }
       message.textContent='Download ready.'
     }catch(e){message.textContent=e instanceof Error?e.message:'Download failed.'}
@@ -169,7 +169,7 @@ export function mountOutput(host:HTMLElement,project:Project,notify:()=>void) {
   archive.onclick=()=>void run(true)
 }
 
-function wireLabelEditing(svg:SVGSVGElement,key:string,state:OutputState,onChange:()=>void) {
+export function wireLabelEditing(svg:SVGSVGElement,key:string,state:OutputState,onChange:()=>void,scope:ParentNode=document) {
   const save=(id:string,x:number,y:number)=>{
     const labels=state.labels[key] ||= {}
     labels[id]={x,y}
@@ -184,7 +184,8 @@ function wireLabelEditing(svg:SVGSVGElement,key:string,state:OutputState,onChang
       if(!delta[e.key]) return
       e.preventDefault()
       save(id,Number(label.getAttribute('x'))+delta[e.key][0],Number(label.getAttribute('y'))+delta[e.key][1])
-      document.querySelector<SVGTextElement>('[data-label="'+CSS.escape(id)+'"]')?.focus()
+      const escaped=typeof CSS==='object' && typeof CSS.escape==='function'?CSS.escape(id):id.replace(/[^\w-]/g,'\\$&')
+      scope.querySelector<SVGTextElement>('[data-label="'+escaped+'"]')?.focus()
     }
     label.onpointerdown=e=>{
       const matrix=svg.getScreenCTM()

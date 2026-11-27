@@ -124,6 +124,14 @@ export function insertRestDay(project:Itinerary,index:number,name='Rest day') {
   return day
 }
 
+export function removeDay(project:Itinerary,day:Day) {
+  const index=project.days.indexOf(day)
+  if(index<0) return false
+  project.days.splice(index,1)
+  project.manualOrder=true
+  return true
+}
+
 // Adjacent days share a point when their boundary falls inside a recorded segment.
 export function combinedRanges(days:Day[]):Range[] {
   const result:Range[]=[]

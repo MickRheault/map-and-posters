@@ -5,21 +5,65 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Map &amp; Posters — Trip editor</title>
 <style>
-:root{color-scheme:light;--ink:#173b33;--muted:#52685e;--paper:#fcfaf2;--line:#c9cfc1;--accent:#b45132;font:15px/1.45 "DM Sans",system-ui,sans-serif;color:var(--ink);background:#e4e6dc}*{box-sizing:border-box}
-body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color:#fffae9;display:flex;align-items:center;gap:20px;justify-content:space-between}.brand{font:600 22px Georgia,serif;letter-spacing:-.5px}.brand span{color:#e4b97f}#storage-status{font-size:13px}.workspace{display:grid;grid-template-columns:minmax(330px,37%) minmax(0,1fr);min-height:calc(100vh - 62px)}aside{background:var(--paper);padding:24px clamp(18px,2.5vw,42px);border-right:1px solid var(--line)}h1{margin:0 0 18px;font:42px/1 Georgia,serif;letter-spacing:-1.8px}h2{font:26px/1.15 Georgia,serif;margin:18px 0 10px}h3{font-size:16px;margin:18px 0 8px}button,input,select,textarea{font:inherit;color:inherit;max-width:100%}button,input::file-selector-button,select{background:#fffef8;border:1px solid #aab7a8;border-radius:5px;padding:6px 10px;cursor:pointer}button:hover{border-color:#316b56;background:#e9eee4}button:disabled{opacity:.5;cursor:default}input[type=text],input[type=number],input[type=url],textarea{background:white;border:1px solid #acb8ab;border-radius:4px;padding:7px}input[type=range],input[type=checkbox]{accent-color:#23634d}button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid #bc6931;outline-offset:2px}
-.file-button{display:inline-flex;align-items:center;cursor:pointer;background:#206248;color:white;font-weight:650;border-radius:6px;padding:9px 16px;position:relative}.file-button input,.restore input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}.file-button:focus-within,.restore:focus-within{outline:3px solid #bc6931}.backup-tools{display:flex;align-items:center;gap:12px;margin:16px 0 6px}.restore{position:relative;text-decoration:underline;cursor:pointer}#message{font-size:14px;color:#81452e;overflow-wrap:anywhere}.tabs{display:flex;border-bottom:1px solid var(--line);gap:8px;margin:20px 0 12px}.tabs button{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;font-weight:650}.tabs button[aria-pressed=true]{border-color:var(--accent)}fieldset{border:1px solid var(--line);border-radius:6px;margin:12px 0;padding:10px;min-width:0}legend{font-weight:600}aside svg{max-width:100%;height:auto}details{margin:10px 0}summary{cursor:pointer;font-weight:600}#output{padding:20px clamp(14px,2vw,38px);min-width:0}#output svg{max-width:100%;height:auto}#output:empty::after{content:"Import a recording to preview your poster.";color:var(--muted)}[hidden]{display:none!important}@media(max-width:850px){.workspace{grid-template-columns:minmax(300px,42%) minmax(0,1fr)}}@media(max-width:660px){.workspace{display:block}aside{border-right:0}.topbar{gap:8px}}
+:root{color-scheme:light;--ink:#173b33;--muted:#52685e;--paper:#fcfaf2;--line:#c9cfc1;--accent:#b45132;--brand:#206248;font:15px/1.45 "DM Sans",system-ui,sans-serif;color:var(--ink);background:#e4e6dc}*{box-sizing:border-box}
+body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color:#fffae9;display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap}.brand{font:600 22px Georgia,serif;letter-spacing:-.5px}.brand span{color:#e4b97f}.top-tools{display:flex;align-items:center;gap:14px;flex-wrap:wrap}#storage-status{font-size:13px}.top-wizard-btn{background:#fcfaf2;color:var(--ink);border:0;border-radius:6px;padding:6px 12px;min-block-size:32px;font-size:13px;font-weight:650}.top-wizard-btn:hover{background:#e9eee4}.workspace{display:grid;grid-template-columns:minmax(330px,37%) minmax(0,1fr);min-height:calc(100vh - 62px)}aside{background:var(--paper);padding:24px clamp(18px,2.5vw,42px);border-right:1px solid var(--line)}h1{margin:0 0 18px;font:42px/1 Georgia,serif;letter-spacing:-1.8px}h2{font:26px/1.15 Georgia,serif;margin:18px 0 10px}h3{font-size:16px;margin:18px 0 8px}button,input,select,textarea{font:inherit;color:inherit;max-width:100%}button,input::file-selector-button,select{background:#fffef8;border:1px solid #aab7a8;border-radius:6px;padding:6px 10px;min-block-size:34px;cursor:pointer}button:hover{border-color:#316b56;background:#e9eee4}button:disabled{opacity:.5;cursor:default}input[type=text],input[type=number],input[type=url],textarea{background:white;border:1px solid #acb8ab;border-radius:6px;padding:8px 10px}input[type=range],input[type=checkbox]{accent-color:#23634d}button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible,select:focus-visible,h1:focus-visible{outline:3px solid #bc6931;outline-offset:2px}
+.file-button{display:inline-flex;align-items:center;cursor:pointer;background:var(--brand);color:white;font-weight:650;border-radius:6px;padding:9px 16px;position:relative}.file-button input,.restore input,.wiz-cta-file input,.wiz-ghost-file input,.wiz-link-file input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}.file-button:focus-within,.restore:focus-within,.wiz-cta-file:focus-within,.wiz-ghost-file:focus-within,.wiz-link-file:focus-within{outline:3px solid #bc6931;outline-offset:2px}.backup-tools{display:flex;align-items:center;gap:12px;margin:16px 0 6px}.restore{position:relative;text-decoration:underline;cursor:pointer}#message{font-size:14px;color:#81452e;overflow-wrap:anywhere}.tabs{display:flex;border-bottom:1px solid var(--line);gap:8px;margin:20px 0 12px}.tabs button{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;font-weight:650}.tabs button[aria-pressed=true]{border-color:var(--accent)}fieldset{border:1px solid var(--line);border-radius:6px;margin:12px 0;padding:10px;min-width:0}legend{font-weight:600}aside svg{max-width:100%;height:auto}details{margin:10px 0}summary{cursor:pointer;font-weight:600}#output{padding:20px clamp(14px,2vw,38px);min-width:0}#output svg{max-width:100%;height:auto}#output:empty::after{content:"Import a recording to preview your poster.";color:var(--muted)}[hidden]{display:none!important}
 #assets label,#itinerary label{display:grid;gap:3px;margin:8px 0}#assets label:has(input[type=checkbox]),#itinerary label:has(input[type=checkbox]){display:flex;align-items:center;gap:6px}#assets details{padding:6px 0;border-bottom:1px solid var(--line)}#assets button,#itinerary button{margin:3px 4px 3px 0}#assets summary,.recording-row{overflow-wrap:anywhere}.recording-row small{display:block;color:#81452e}aside label input[type=range]{width:100%}
+dialog#wizard-dialog{width:min(540px,calc(100vw - 32px));max-height:calc(100dvh - 32px);margin:auto;padding:0;border:0;border-radius:18px;background:var(--paper);color:var(--ink);box-shadow:0 28px 80px rgba(10,30,24,.38);overflow:hidden}
+dialog#wizard-dialog[data-step="2"],dialog#wizard-dialog[data-step="5"]{width:min(640px,calc(100vw - 32px))}
+dialog#wizard-dialog[open]{display:flex;flex-direction:column}
+dialog#wizard-dialog:modal{overscroll-behavior:contain}
+dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blur(8px);overflow:hidden;overscroll-behavior:contain}
+.wiz-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px 0}.wiz-progress{display:flex;align-items:center;gap:10px}.wiz-dots ol{list-style:none;margin:0;padding:0;display:flex;gap:6px}.wiz-dots button{width:28px;height:8px;min-block-size:24px;padding:8px 0;background:transparent;border:0;display:grid;place-items:center}.wiz-dots button::before{content:"";display:block;width:24px;height:5px;border-radius:999px;background:#d3d8cc;transition:background .15s}.wiz-dots button.is-done::before{background:#7ea392}.wiz-dots button[aria-current=step]::before{background:var(--brand)}.wiz-counter{font-size:12px;font-weight:650;color:var(--muted)}.wiz-exit{background:none;border:0;color:var(--muted);font-size:13px;padding:4px 6px;min-block-size:28px;text-decoration:underline}.wiz-exit:hover{background:none;color:var(--ink)}
+.wiz-body{padding:20px 28px 16px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:16px}.wiz-body h1{margin:0;font:600 30px/1.15 Georgia,serif;letter-spacing:-.8px;text-align:center}#wizard-content{display:flex;flex-direction:column;gap:14px}.wiz-status{margin:0;min-height:1.2em;font-size:13px;color:#81452e;text-align:center}
+.wiz-dropzone{border:2px dashed #aeb9ab;border-radius:14px;background:#f4f6ee;padding:44px 20px;display:grid;place-items:center;transition:border-color .15s,background .15s}.wiz-dropzone.is-drag{border-color:var(--brand);background:#e7efe8}
+.wiz-cta-file{display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;background:var(--brand);color:white;font-weight:650;font-size:16px;border-radius:10px;padding:13px 26px;min-block-size:48px}.wiz-cta-file:hover{background:#184f39}
+.wiz-alt-links{display:flex;justify-content:center;align-items:center;gap:10px;font-size:13px;color:var(--muted)}.wiz-link,.wiz-link-file{position:relative;background:none;border:0;padding:4px;min-block-size:28px;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px}.wiz-link:hover,.wiz-link-file:hover{background:none;color:var(--ink)}.wiz-danger{color:#9a3520}.wiz-danger:hover{color:#762311}.wiz-rest-row{display:flex;align-items:center;gap:10px}.wiz-sep{opacity:.5}
+.wiz-route-card{position:relative;background:#eef2e6;border-radius:12px;padding:8px}.wiz-mini-map{width:100%;height:110px;display:block}.wiz-badge{position:absolute;top:10px;right:10px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700}
+.wiz-list{display:grid;gap:8px;max-height:240px;overflow-y:auto;overscroll-behavior:contain}.wiz-rec,.wiz-stop{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fffef8;border:1px solid var(--line);border-radius:10px;padding:8px 12px}.wiz-check{display:flex;align-items:center;gap:8px;min-width:0;cursor:pointer}.wiz-check span{overflow-wrap:anywhere}.wiz-warn{background:#fdebe4;color:#993d20;font-size:12px;font-weight:650;padding:2px 8px;border-radius:999px;white-space:nowrap}.wiz-arrows,.wiz-stop-actions,.wiz-inline-tools,.wiz-pills,.wiz-photo-bar,.wiz-export-top,.wiz-export-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.wiz-inline-tools,.wiz-photo-bar{justify-content:center}.wiz-icon{min-width:30px;min-block-size:30px;padding:2px 8px;font-size:14px}
+.wiz-pills{justify-content:center}.wiz-day-pill{border-radius:999px;padding:5px 12px;font-size:13px;border:1.5px solid var(--line);background:#fffef8}.wiz-day-pill[aria-pressed=true]{border-color:var(--day-color,var(--brand));background:#eef3ec;font-weight:700}.wiz-pill-add{border-radius:999px;border-style:dashed;font-size:13px;padding:5px 12px}
+.wiz-split-map{width:100%;aspect-ratio:2/1;height:auto;background:#eef2e6;border-radius:10px;cursor:crosshair;display:block}.wiz-empty-day{background:#f4f6ee;border:1px solid var(--line);border-radius:12px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}.wiz-empty-day p{margin:0}.wiz-slider{width:100%}.wiz-split-bar{display:flex;align-items:center;justify-content:space-between;gap:10px}.wiz-meta{font-size:13px;color:var(--muted);font-weight:600}
+.wiz-chip{border-radius:999px;font-size:12px;padding:4px 10px;min-block-size:28px}.wiz-chip[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:white}.wiz-add-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}.wiz-input{width:100%;min-width:0}.wiz-select,.wiz-select-sm{min-block-size:34px;font-size:14px}.wiz-select-sm{font-size:13px;padding:4px 8px;min-block-size:30px}
+.wiz-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}.wiz-photo{background:#fffef8;border:1px solid var(--line);border-radius:10px;padding:8px;display:grid;gap:8px}.wiz-photo img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;display:block}.wiz-photo-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.wiz-crop-box{display:grid;gap:4px;font-size:12px}.wiz-crop-box label{display:grid;gap:2px}.wiz-crop-box input{width:100%}
+.wiz-export-top{display:grid;grid-template-columns:1fr auto auto;gap:8px}.wiz-preview{margin:0 auto;width:min(100%,420px);max-height:46vh;overflow-y:auto;overscroll-behavior:contain;line-height:0;border-radius:8px;box-shadow:0 6px 20px rgba(24,62,52,.16)}.wiz-preview.is-phone{width:min(100%,300px)}.wiz-preview svg{width:100%;height:auto}.wiz-export-bar{justify-content:center}
+.wiz-primary{background:var(--brand);border-color:var(--brand);color:white;font-weight:650;padding:8px 18px}.wiz-primary:hover{background:#184f39;border-color:#184f39}.wiz-ghost,.wiz-ghost-file{position:relative;display:inline-flex;align-items:center;justify-content:center;background:#f2f5ec;border:1px solid #b5c0b2;border-radius:6px;padding:7px 14px;min-block-size:34px;font-weight:600;cursor:pointer}.wiz-ghost:hover,.wiz-ghost-file:hover{background:#e5ece1}
+.wiz-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 28px 20px;border-top:1px solid #e2e6da}.wiz-foot button:only-child,.wiz-foot #wizard-back[hidden]+#wizard-next{margin-left:auto}
+@media(max-width:850px){.workspace{grid-template-columns:minmax(300px,42%) minmax(0,1fr)}}@media(max-width:660px){.workspace{display:block}aside{border-right:0}.topbar{gap:8px}.wiz-add-row,.wiz-export-top{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header class="topbar"><div class="brand">Map <span>&amp;</span> Posters</div><span id="storage-status" role="status"></span></header>
+<header class="topbar"><div class="brand">Map <span>&amp;</span> Posters</div><div class="top-tools"><button id="open-wizard" class="top-wizard-btn" type="button">Guided wizard</button><span id="storage-status" role="status"></span></div></header>
 <main class="workspace"><aside><h1>Trip editor</h1>
 <label class="file-button">Import GPX<input id="file" type="file" multiple accept=".gpx,application/gpx+xml"></label>
-<div class="backup-tools"><button id="backup" type="button">Download backup</button><label class="restore">Restore backup<input id="restore" aria-label="Restore backup" type="file" accept=".json"></label></div>
+<div class="backup-tools"><button id="backup" type="button">Download backup</button><label class="restore">Restore backup<input id="restore" aria-label="Restore backup" type="file" accept=".json"></label><button id="reset-trip" type="button">New trip</button></div>
 <div id="message" role="status"></div>
-<nav class="tabs" aria-label="Trip editing tools"><button data-tab="itinerary" aria-pressed="true">Itinerary</button><button data-tab="assets" aria-pressed="false">Places &amp; photos</button></nav>
+<nav class="tabs" aria-label="Trip editing tools"><button type="button" data-tab="itinerary" aria-pressed="true">Itinerary</button><button type="button" data-tab="assets" aria-pressed="false">Places &amp; photos</button></nav>
 <div id="itinerary"></div><div id="assets" hidden></div></aside>
 <section id="output" aria-label="Poster studio"></section></main>
+<dialog id="wizard-dialog" aria-labelledby="wizard-heading">
+  <div class="wiz-top">
+    <div class="wiz-progress">
+      <nav class="wiz-dots" aria-label="Trip steps"><ol>
+        <li><button type="button" data-step="1" aria-label="Step 1: Add your GPX" aria-current="step"></button></li>
+        <li><button type="button" data-step="2" aria-label="Step 2: Split into days"></button></li>
+        <li><button type="button" data-step="3" aria-label="Step 3: Pick stops"></button></li>
+        <li><button type="button" data-step="4" aria-label="Step 4: Add photos"></button></li>
+        <li><button type="button" data-step="5" aria-label="Step 5: Ready to download"></button></li>
+      </ol></nav>
+      <span id="wizard-counter" class="wiz-counter">1 / 5</span>
+    </div>
+    <button id="wizard-exit" class="wiz-exit" type="button">Full editor</button>
+  </div>
+  <div class="wiz-body">
+    <h1 id="wizard-heading" tabindex="-1"></h1>
+    <div id="wizard-content"></div>
+    <p id="wizard-status" class="wiz-status" role="status"></p>
+  </div>
+  <div class="wiz-foot" id="wizard-foot">
+    <button id="wizard-back" type="button">Back</button>
+    <button id="wizard-next" class="wiz-primary" type="button"></button>
+  </div>
+</dialog>
 <script>(() => {
   // src/track.ts
   var rad = Math.PI / 180;
@@ -402,6 +446,14 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     project.manualOrder = true;
     return day;
   }
+  function removeDay(project, day) {
+    const index = project.days.indexOf(day);
+    if (index < 0)
+      return false;
+    project.days.splice(index, 1);
+    project.manualOrder = true;
+    return true;
+  }
   function combinedRanges(days) {
     const result = [];
     for (const day of days)
@@ -617,7 +669,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     notice.setAttribute("role", "status");
     const mapBox = details("Drop a pin on the map", project, "map");
     mapBox.ontoggle = () => {
-      if (!mapBox.open || mapBox.querySelector("svg"))
+      if (!mapBox.isConnected || !mapBox.open || mapBox.querySelector("svg"))
         return;
       mapBox.append(pinMap(project, (coords) => {
         location.value = coords.lat.toFixed(7) + ", " + coords.lon.toFixed(7);
@@ -684,7 +736,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
         const day = select(dayOptions()), overnight = input("", "checkbox"), position = element("select");
         let refs = [];
         box.ontoggle = () => {
-          if (box.open)
+          if (box.isConnected && box.open)
             options();
         };
         day.onchange = options;
@@ -1009,10 +1061,10 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     draw();
     return panel;
   }
-  function mountItinerary(host, project, onChange, onMerge) {
+  function mountItinerary(host, project, onChange, onMerge, onDelete, onDeleteRecording) {
     host.replaceChildren();
     function commit() {
-      mountItinerary(host, project, onChange, onMerge);
+      mountItinerary(host, project, onChange, onMerge, onDelete, onDeleteRecording);
       onChange();
     }
     if (!project.recordings.length && !project.days.length) {
@@ -1046,7 +1098,15 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
       }, i === project.recordings.length - 1);
       up.setAttribute("aria-label", "Move " + rec.name + " earlier");
       down.setAttribute("aria-label", "Move " + rec.name + " later");
-      row.append(label, up, down);
+      const del = button2("×", () => {
+        if (onDeleteRecording)
+          onDeleteRecording(rec.id);
+        else
+          project.recordings.splice(i, 1);
+        commit();
+      });
+      del.setAttribute("aria-label", "Delete " + rec.name);
+      row.append(label, up, down, del);
       const start = rec.track[0]?.[0]?.time;
       if (start)
         row.append(element2("small", start));
@@ -1090,7 +1150,13 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
         host.dataset.day = rest.id;
         commit();
       };
-      detail.append(button2("Rest day before", () => addRest(0)), button2("Rest day after", () => addRest(1)));
+      detail.append(button2("Rest day before", () => addRest(0)), button2("Rest day after", () => addRest(1)), button2("Delete day", () => {
+        if (onDelete)
+          onDelete(day.id);
+        else
+          removeDay(project, day);
+        commit();
+      }));
       if (day.rest)
         return;
       const track = dayTrack(project, day);
@@ -1496,7 +1562,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
       canvas.width = canvas.height = 0;
     }
   }
-  function download(blob, name) {
+  function downloadBlob(blob, name) {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = name;
@@ -1598,7 +1664,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
         onChange();
       };
     }
-    wireLabelEditing(host.querySelector("#poster-preview svg"), target.key, state, onChange);
+    wireLabelEditing(host.querySelector("#poster-preview svg"), target.key, state, onChange, host);
     const files = posterFiles(project, targets);
     const individual = get("#download-poster"), archive = get("#download-zip");
     const selected = files.filter((f) => state.selected.includes(f.target.key));
@@ -1615,9 +1681,9 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
             const blob = await rasterize(file.svg, format);
             entries.push({ name: file.name, bytes: new Uint8Array(await blob.arrayBuffer()) });
           }
-          download(zip(entries), archiveName);
+          downloadBlob(zip(entries), archiveName);
         } else {
-          download(await rasterize(svg, format), files.find((f) => f.target.key === target.key).name);
+          downloadBlob(await rasterize(svg, format), files.find((f) => f.target.key === target.key).name);
         }
         message.textContent = "Download ready.";
       } catch (e) {
@@ -1630,7 +1696,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     individual.onclick = () => void run(false);
     archive.onclick = () => void run(true);
   }
-  function wireLabelEditing(svg, key, state, onChange) {
+  function wireLabelEditing(svg, key, state, onChange, scope = document) {
     const save = (id, x, y) => {
       const labels = state.labels[key] ||= {};
       labels[id] = { x, y };
@@ -1647,7 +1713,8 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
           return;
         e.preventDefault();
         save(id, Number(label.getAttribute("x")) + delta[e.key][0], Number(label.getAttribute("y")) + delta[e.key][1]);
-        document.querySelector('[data-label="' + CSS.escape(id) + '"]')?.focus();
+        const escaped = typeof CSS === "object" && typeof CSS.escape === "function" ? CSS.escape(id) : id.replace(/[^\w-]/g, "\\$&");
+        scope.querySelector('[data-label="' + escaped + '"]')?.focus();
       };
       label.onpointerdown = (e) => {
         const matrix = svg.getScreenCTM();
@@ -1689,6 +1756,73 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
       sources: [],
       output: defaultOutput()
     };
+  }
+  function deleteProjectDay(project, dayId) {
+    const day = project.days.find((d) => d.id === dayId);
+    if (!day || !removeDay(project, day))
+      return;
+    project.visits = project.visits.filter((v) => v.dayId !== dayId);
+    let hasTripHero = project.photos.some((p) => p.dayId === "" && p.hero);
+    for (const photo of project.photos) {
+      if (photo.dayId !== dayId)
+        continue;
+      photo.dayId = "";
+      if (photo.hero && hasTripHero)
+        photo.hero = false;
+      else if (photo.hero)
+        hasTripHero = true;
+    }
+    const out = project.output;
+    const removedKeys = new Set(["day:" + dayId]);
+    out.groups = out.groups.filter((group) => {
+      group.dayIds = group.dayIds.filter((id) => id !== dayId);
+      if (group.dayIds.length)
+        return true;
+      removedKeys.add("group:" + group.id);
+      return false;
+    });
+    if (removedKeys.has(out.active))
+      out.active = "trip";
+    out.selected = out.selected.filter((key) => !removedKeys.has(key));
+    for (const settings of [out.labels, out.placeVisibility, out.placeText]) {
+      if (!settings)
+        continue;
+      for (const key of removedKeys)
+        delete settings[key];
+    }
+    const usedRecordings = new Set;
+    for (const d of project.days)
+      for (const r of d.ranges)
+        usedRecordings.add(r.recordingId);
+    for (const v of project.visits)
+      if (v.position)
+        usedRecordings.add(v.position.recordingId);
+    project.recordings = project.recordings.filter((r) => usedRecordings.has(r.id));
+  }
+  function deleteProjectRecording(project, recordingId) {
+    const rec = project.recordings.find((r) => r.id === recordingId);
+    if (!rec)
+      return;
+    project.recordings = project.recordings.filter((r) => r.id !== recordingId);
+    const sourceIndex = project.sources.findIndex((s) => s.name === rec.name);
+    if (sourceIndex >= 0)
+      project.sources.splice(sourceIndex, 1);
+    for (const visit of project.visits) {
+      if (visit.position?.recordingId === recordingId)
+        delete visit.position;
+    }
+    const emptyDays = [];
+    for (const day of project.days) {
+      if (day.rest)
+        continue;
+      day.ranges = day.ranges.filter((r) => r.recordingId !== recordingId);
+      if (!day.ranges.length)
+        emptyDays.push(day.id);
+    }
+    for (const dayId of emptyDays)
+      deleteProjectDay(project, dayId);
+    if (!project.recordings.length && !project.days.length)
+      delete project.manualOrder;
   }
   var format = "map-and-posters";
   var version = 1;
@@ -1829,16 +1963,834 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     });
   }
 
+  // src/wizard.ts
+  var STEP_TITLES = [
+    "Add your GPX",
+    "Split into days",
+    "Pick stops",
+    "Add photos",
+    "Ready to download"
+  ];
+  function el(tag, text = "", className = "") {
+    const node = document.createElement(tag);
+    if (text)
+      node.textContent = text;
+    if (className)
+      node.className = className;
+    return node;
+  }
+  function btn(text, click, className = "") {
+    const node = el("button", text, className);
+    node.type = "button";
+    node.onclick = click;
+    return node;
+  }
+  function svgEl(tag, attrs) {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [k, v] of Object.entries(attrs))
+      node.setAttribute(k, v);
+    return node;
+  }
+  function routeSilhouette(segments, stroke = "#206248") {
+    if (!segments.length)
+      return null;
+    const bounds = layout(segments);
+    const scale = Math.min(340 / (bounds.east - bounds.west || 0.00000001), 116 / (bounds.north - bounds.south || 0.00000001));
+    const px = (x) => (180 + (x - (bounds.east + bounds.west) / 2) * scale).toFixed(1);
+    const py = (y) => (70 - (y - (bounds.north + bounds.south) / 2) * scale).toFixed(1);
+    const svg = svgEl("svg", { viewBox: "0 0 360 140", class: "wiz-mini-map", "aria-label": "Route preview" });
+    for (const line of bounds.lines) {
+      const d = line.map((p, i) => (i ? "L" : "M") + px(p.x) + "," + py(p.y)).join("");
+      svg.append(svgEl("path", { d, fill: "none", stroke, "stroke-width": "3", "stroke-linecap": "round", "stroke-linejoin": "round" }));
+    }
+    const wrap = el("div", "", "wiz-route-card");
+    wrap.append(svg, el("span", bounds.km.toFixed(1) + " km", "wiz-badge"));
+    return wrap;
+  }
+  function overnightPosition(project, place, day) {
+    if (day.rest)
+      return;
+    const end = day.ranges.filter((r) => project.recordings.some((rec) => rec.id === r.recordingId && rec.included)).at(-1);
+    const pass = visitCandidates(project, day, place).at(-1);
+    return end ? { recordingId: end.recordingId, segment: end.segment, point: end.end } : pass?.position;
+  }
+  function createWizard(dialog, hooks) {
+    const heading = dialog.querySelector("#wizard-heading");
+    const content = dialog.querySelector("#wizard-content");
+    const statusEl = dialog.querySelector("#wizard-status");
+    const counterEl = dialog.querySelector("#wizard-counter");
+    const foot = dialog.querySelector("#wizard-foot");
+    const backBtn = dialog.querySelector("#wizard-back");
+    const nextBtn = dialog.querySelector("#wizard-next");
+    const exitBtn = dialog.querySelector("#wizard-exit");
+    let step = 1;
+    let activeDayId = "";
+    let showAddPlace = false;
+    let photoDayId = "";
+    let expandedCropPhotoId = "";
+    let statusText = "";
+    let busy = false;
+    function isOpen() {
+      return dialog.hasAttribute("open");
+    }
+    function show() {
+      if (isOpen())
+        return;
+      renderContent();
+      if (typeof dialog.showModal === "function")
+        dialog.showModal();
+      else
+        dialog.setAttribute("open", "");
+      heading.focus();
+    }
+    function hide() {
+      if (!isOpen())
+        return;
+      if (typeof dialog.close === "function")
+        dialog.close("exit");
+      else {
+        dialog.removeAttribute("open");
+        hooks.onExit();
+      }
+    }
+    dialog.addEventListener("close", () => {
+      dialog.returnValue = "";
+      hooks.onExit();
+    });
+    exitBtn.onclick = () => hide();
+    function go(next) {
+      step = Math.max(1, Math.min(STEP_TITLES.length, next));
+      statusText = "";
+      render();
+      heading.focus();
+    }
+    dialog.querySelectorAll("[data-step]").forEach((button) => {
+      button.onclick = () => go(Number(button.dataset.step));
+    });
+    backBtn.onclick = () => go(step - 1);
+    function setStatus(text) {
+      statusText = text;
+      statusEl.textContent = text;
+    }
+    function mutate() {
+      hooks.onMutate();
+      render();
+    }
+    async function handleGpxFiles(files) {
+      if (!files.length)
+        return;
+      busy = true;
+      setStatus("Reading GPX…");
+      render();
+      try {
+        setStatus(await hooks.importGpx(files));
+      } finally {
+        busy = false;
+        render();
+      }
+    }
+    function restoreLabel() {
+      const restoreInput = el("input");
+      restoreInput.id = "wizard-restore";
+      restoreInput.type = "file";
+      restoreInput.accept = ".json";
+      restoreInput.onchange = async () => {
+        const file = restoreInput.files?.[0];
+        restoreInput.value = "";
+        if (!file)
+          return;
+        setStatus(await hooks.restoreBackup(file));
+        render();
+      };
+      const label = el("label", "Restore backup", "wiz-link-file");
+      label.append(restoreInput);
+      return label;
+    }
+    function renderStep1(project) {
+      const hasContent = project.recordings.length > 0 || project.days.length > 0;
+      const gpxInput = el("input");
+      gpxInput.id = "wizard-gpx";
+      gpxInput.type = "file";
+      gpxInput.multiple = true;
+      gpxInput.accept = ".gpx,application/gpx+xml";
+      gpxInput.disabled = busy;
+      gpxInput.onchange = async () => {
+        const files = Array.from(gpxInput.files || []);
+        gpxInput.value = "";
+        await handleGpxFiles(files);
+      };
+      if (!hasContent) {
+        const zone = el("div", "", "wiz-dropzone");
+        const pick = el("label", "Choose GPX files", "wiz-cta-file");
+        pick.append(gpxInput);
+        zone.append(pick);
+        zone.ondragover = (e) => {
+          e.preventDefault();
+          zone.classList.add("is-drag");
+        };
+        zone.ondragleave = () => zone.classList.remove("is-drag");
+        zone.ondrop = (e) => {
+          e.preventDefault();
+          zone.classList.remove("is-drag");
+          const files = Array.from(e.dataTransfer?.files || []).filter((f) => /\.gpx$/i.test(f.name) || f.type.includes("gpx"));
+          handleGpxFiles(files);
+        };
+        const restBtn = btn("Start with a rest day", () => {
+          const rest = insertRestDay(project, 0);
+          activeDayId = rest.id;
+          hooks.onMutate();
+          go(2);
+        }, "wiz-link");
+        const alt = el("div", "", "wiz-alt-links");
+        alt.append(restoreLabel(), el("span", "·", "wiz-sep"), restBtn);
+        content.append(zone, alt);
+        return;
+      }
+      const preview = routeSilhouette(project.recordings.filter((r) => r.included).flatMap((r) => r.track));
+      if (preview)
+        content.append(preview);
+      if (project.recordings.length) {
+        const list = el("div", "", "wiz-list");
+        project.recordings.forEach((rec, i) => {
+          const row = el("div", "", "wiz-rec");
+          const check = el("input");
+          check.type = "checkbox";
+          check.checked = rec.included;
+          check.onchange = () => {
+            rec.included = check.checked;
+            mutate();
+          };
+          const label = el("label", "", "wiz-check");
+          label.append(check, el("span", rec.name));
+          row.append(label);
+          const overlaps = project.recordings.slice(0, i).filter((other) => possibleOverlap(rec, other));
+          if (overlaps.length)
+            row.append(el("span", "Possible overlap", "wiz-warn"));
+          const controls = el("div", "", "wiz-arrows");
+          if (project.recordings.length > 1) {
+            const up = btn("↑", () => {
+              moveRecording(project, i, -1);
+              mutate();
+            }, "wiz-icon");
+            up.disabled = i === 0;
+            up.setAttribute("aria-label", "Move " + rec.name + " earlier");
+            const down = btn("↓", () => {
+              moveRecording(project, i, 1);
+              mutate();
+            }, "wiz-icon");
+            down.disabled = i === project.recordings.length - 1;
+            down.setAttribute("aria-label", "Move " + rec.name + " later");
+            controls.append(up, down);
+          }
+          const del = btn("×", () => {
+            hooks.deleteRecording(rec.id);
+            setStatus("");
+            mutate();
+          }, "wiz-icon wiz-danger");
+          del.setAttribute("aria-label", "Delete " + rec.name);
+          controls.append(del);
+          row.append(controls);
+          list.append(row);
+        });
+        content.append(list);
+      }
+      const addMore = el("label", "+ Add GPX", "wiz-ghost-file");
+      addMore.append(gpxInput);
+      const tools = el("div", "", "wiz-inline-tools");
+      tools.append(addMore, restoreLabel(), btn("New trip", () => hooks.resetTrip(), "wiz-link wiz-danger"));
+      content.append(tools);
+    }
+    function renderStep2(project) {
+      if (!project.days.length) {
+        content.append(btn("+ Rest day", () => {
+          const rest = insertRestDay(project, 0);
+          activeDayId = rest.id;
+          mutate();
+        }, "wiz-ghost"));
+        return;
+      }
+      if (!project.days.some((d) => d.id === activeDayId))
+        activeDayId = project.days[0].id;
+      const index = project.days.findIndex((d) => d.id === activeDayId);
+      const day = project.days[index];
+      const pills = el("div", "", "wiz-pills");
+      project.days.forEach((d) => {
+        const pill = btn(dayName(project, d), () => {
+          activeDayId = d.id;
+          render();
+        }, "wiz-day-pill");
+        pill.setAttribute("aria-pressed", String(d.id === day.id));
+        pill.style.setProperty("--day-color", d.color);
+        pills.append(pill);
+      });
+      pills.append(btn("+ Rest day", () => {
+        const rest = insertRestDay(project, index + 1);
+        activeDayId = rest.id;
+        mutate();
+      }, "wiz-pill-add"));
+      content.append(pills);
+      const deleteBtn = () => btn("Delete day", () => {
+        hooks.deleteDay(day.id);
+        const next = project.days[Math.min(index, project.days.length - 1)];
+        activeDayId = next?.id || "";
+        setStatus("");
+        mutate();
+      }, "wiz-link wiz-danger");
+      if (day.rest) {
+        const restRow = el("div", "", "wiz-rest-row");
+        const nameInput = el("input", "", "wiz-input");
+        nameInput.type = "text";
+        nameInput.maxLength = 80;
+        nameInput.placeholder = "Rest day name (e.g. Pai)";
+        nameInput.setAttribute("aria-label", "Day name");
+        nameInput.value = day.name;
+        nameInput.onchange = () => {
+          day.name = nameInput.value.trim();
+          mutate();
+        };
+        restRow.append(nameInput, deleteBtn());
+        content.append(restRow);
+        return;
+      }
+      const ranges = combinedRanges([day]);
+      const sources = new Map(project.recordings.map((r) => [r.id, r]));
+      const visible = ranges.filter((r) => sources.get(r.recordingId)?.included);
+      const segments = visible.map((r) => sources.get(r.recordingId).track[r.segment].slice(r.start, r.end + 1));
+      if (!segments.length) {
+        const box = el("div", "", "wiz-empty-day");
+        box.append(el("p", "This day’s GPX is unchecked in Step 1.", "wiz-meta"));
+        const row = el("div", "", "wiz-inline-tools");
+        row.append(btn("Include GPX", () => {
+          for (const r of ranges) {
+            const rec = sources.get(r.recordingId);
+            if (rec)
+              rec.included = true;
+          }
+          mutate();
+        }, "wiz-ghost"), deleteBtn());
+        box.append(row);
+        content.append(box);
+        return;
+      }
+      const bounds = layout(segments);
+      const scale = Math.min(372 / (bounds.east - bounds.west || 0.00000001), 172 / (bounds.north - bounds.south || 0.00000001));
+      const projectAxis = (x, center, offset) => offset + (x - center) * scale;
+      const samples = [];
+      bounds.lines.forEach((line, run) => {
+        const r = visible[run];
+        line.forEach((p, i) => samples.push({
+          recordingId: r.recordingId,
+          segment: r.segment,
+          point: r.start + i,
+          run,
+          km: p.km,
+          x: projectAxis(p.x, (bounds.east + bounds.west) / 2, 200),
+          y: projectAxis(-p.y, -(bounds.north + bounds.south) / 2, 100)
+        }));
+      });
+      if (samples.length < 3) {
+        const card = routeSilhouette(segments, day.color);
+        if (card)
+          content.append(card);
+        const actions = el("div", "", "wiz-inline-tools");
+        actions.append(deleteBtn());
+        content.append(actions);
+        return;
+      }
+      const map = svgEl("svg", { viewBox: "0 0 400 200", class: "wiz-split-map", "aria-label": "Choose a boundary on the recorded route" });
+      const slider = el("input", "", "wiz-slider");
+      slider.type = "range";
+      slider.min = "1";
+      slider.max = String(samples.length - 2);
+      slider.step = "1";
+      slider.setAttribute("aria-label", "Boundary point");
+      const passes = el("select", "", "wiz-select");
+      passes.setAttribute("aria-label", "Matching visits");
+      passes.hidden = true;
+      const readout = el("span", "", "wiz-meta");
+      let split = Math.floor(samples.length / 2);
+      const xy = (q) => q.x.toFixed(1) + "," + q.y.toFixed(1);
+      function draw() {
+        slider.value = String(split);
+        const chosen = samples[split];
+        readout.textContent = chosen.km.toFixed(1) + " km  ·  " + (bounds.km - chosen.km).toFixed(1) + " km";
+        map.replaceChildren();
+        let path = "", prevColor = "", prevRun = -1;
+        const flush = () => {
+          if (path)
+            map.prepend(svgEl("path", { fill: "none", stroke: prevColor, "stroke-width": "3.5", "stroke-linejoin": "round", "stroke-linecap": "round", d: path }));
+        };
+        for (let i = 0;i < samples.length; i++) {
+          const p = samples[i], color = i <= split ? day.color : "#8b948c";
+          if (p.run !== prevRun || color !== prevColor) {
+            flush();
+            const prev = i > 0 && samples[i - 1].run === p.run ? samples[i - 1] : null;
+            path = prev ? "M" + xy(prev) : "";
+          }
+          path += (path ? "L" : "M") + xy(p);
+          prevRun = p.run;
+          prevColor = color;
+        }
+        flush();
+        map.append(svgEl("circle", { cx: String(chosen.x), cy: String(chosen.y), r: "5.5", fill: "#fff", stroke: "#173b33", "stroke-width": "2.5" }));
+      }
+      const setSplit = (v) => {
+        split = Math.max(1, Math.min(samples.length - 2, v));
+        draw();
+      };
+      slider.oninput = () => {
+        passes.hidden = true;
+        setSplit(Number(slider.value));
+      };
+      map.onclick = (ev) => {
+        const rect = map.getBoundingClientRect();
+        const loc = { x: (ev.clientX - rect.left) / rect.width * 400, y: (ev.clientY - rect.top) / rect.height * 200 };
+        const ds = samples.map((p) => Math.hypot(p.x - loc.x, p.y - loc.y));
+        let best = Infinity;
+        for (let i = 1;i < ds.length - 1; i++)
+          best = Math.min(best, ds[i]);
+        const candidates = [];
+        for (let i = 1;i < ds.length - 1; i++) {
+          if (ds[i] > best + 3)
+            continue;
+          const first = i;
+          while (i + 1 < ds.length - 1 && samples[i + 1].run === samples[first].run && Math.abs(ds[i + 1] - ds[first]) < 0.000001)
+            i++;
+          const before = first === 1 || samples[first - 1].run !== samples[first].run ? Infinity : ds[first - 1];
+          const after = i === ds.length - 2 || samples[i + 1].run !== samples[first].run ? Infinity : ds[i + 1];
+          if (ds[first] <= before && ds[first] <= after)
+            candidates.push(first);
+        }
+        if (!candidates.length)
+          return;
+        passes.replaceChildren(...candidates.map((idx, n) => {
+          const o = el("option", "Pass " + (n + 1) + " · " + samples[idx].km.toFixed(1) + " km");
+          o.value = String(idx);
+          return o;
+        }));
+        passes.hidden = candidates.length < 2;
+        setSplit(candidates[0]);
+      };
+      passes.onchange = () => setSplit(Number(passes.value));
+      const bar = el("div", "", "wiz-split-bar");
+      const barActions = el("div", "", "wiz-stop-actions");
+      barActions.append(deleteBtn(), btn("Split here", () => {
+        try {
+          const nextDay = setBoundary(project, day, null, samples[split]);
+          activeDayId = nextDay.id;
+          setStatus("");
+          mutate();
+        } catch (e) {
+          setStatus(e.message);
+        }
+      }, "wiz-ghost"));
+      bar.append(readout, barActions);
+      draw();
+      content.append(map, passes, slider, bar);
+    }
+    function toggleOvernight(project, place, day) {
+      const existing = project.visits.find((v) => v.placeId === place.id && v.dayId === day.id && v.overnight);
+      if (existing) {
+        project.visits = project.visits.filter((v) => v.id !== existing.id);
+      } else {
+        project.visits.push({
+          id: crypto.randomUUID(),
+          placeId: place.id,
+          dayId: day.id,
+          overnight: true,
+          position: overnightPosition(project, place, day)
+        });
+      }
+      mutate();
+    }
+    function renderStep3(project) {
+      if (project.places.length) {
+        const list = el("div", "", "wiz-list");
+        for (const place of project.places) {
+          const row = el("div", "", "wiz-stop");
+          const cb = el("input");
+          cb.type = "checkbox";
+          cb.checked = place.visible;
+          cb.onchange = () => {
+            place.visible = cb.checked;
+            mutate();
+          };
+          const lbl = el("label", "", "wiz-check");
+          lbl.append(cb, el("span", place.name));
+          row.append(lbl);
+          if (place.visible && project.days.length) {
+            const existing = project.visits.find((v) => v.placeId === place.id && v.overnight);
+            let chosenDay = project.days.find((d) => d.id === existing?.dayId) || project.days[0];
+            const actions = el("div", "", "wiz-stop-actions");
+            if (project.days.length > 1) {
+              const sel = el("select", "", "wiz-select-sm");
+              sel.setAttribute("aria-label", "Day for " + place.name);
+              for (const d of project.days) {
+                const opt = el("option", dayName(project, d));
+                opt.value = d.id;
+                sel.add(opt);
+              }
+              sel.value = chosenDay.id;
+              sel.onchange = () => {
+                chosenDay = project.days.find((d) => d.id === sel.value) || project.days[0];
+                if (existing) {
+                  existing.dayId = chosenDay.id;
+                  existing.position = overnightPosition(project, place, chosenDay);
+                  mutate();
+                }
+              };
+              actions.append(sel);
+            }
+            const night = btn("Overnight", () => toggleOvernight(project, place, chosenDay), "wiz-chip");
+            night.setAttribute("aria-pressed", String(Boolean(existing)));
+            actions.append(night);
+            row.append(actions);
+          }
+          list.append(row);
+        }
+        content.append(list);
+      }
+      const toggleAdd = btn(showAddPlace ? "Cancel" : "+ Add place", () => {
+        showAddPlace = !showAddPlace;
+        setStatus("");
+        render();
+      }, "wiz-ghost");
+      content.append(toggleAdd);
+      if (!showAddPlace)
+        return;
+      const form = el("div", "", "wiz-add-row");
+      const nameIn = el("input", "", "wiz-input");
+      nameIn.placeholder = "Place name";
+      nameIn.setAttribute("aria-label", "Place name");
+      const locIn = el("input", "", "wiz-input");
+      locIn.placeholder = "Lat, lon or map link";
+      locIn.setAttribute("aria-label", "Location");
+      const add = btn("Add", () => {
+        const coords = readCoordinates(locIn.value);
+        if (!coords) {
+          setStatus("Paste coordinates or a map link.");
+          return;
+        }
+        addPlace(project, nameIn.value, coords);
+        showAddPlace = false;
+        setStatus("");
+        mutate();
+      }, "wiz-primary");
+      form.append(nameIn, locIn, add);
+      content.append(form);
+    }
+    function renderStep4(project) {
+      const bar = el("div", "", "wiz-photo-bar");
+      const input = el("input");
+      input.id = "wizard-photos";
+      input.type = "file";
+      input.multiple = true;
+      input.accept = "image/jpeg,image/png,.jpg,.jpeg,.png";
+      input.disabled = busy;
+      const daySel = el("select", "", "wiz-select");
+      daySel.id = "wizard-photo-day";
+      daySel.setAttribute("aria-label", "Assign photos to");
+      const fullOpt = el("option", "Full trip");
+      fullOpt.value = "";
+      daySel.add(fullOpt);
+      for (const d of project.days) {
+        const opt = el("option", dayName(project, d));
+        opt.value = d.id;
+        daySel.add(opt);
+      }
+      if (photoDayId && project.days.some((d) => d.id === photoDayId))
+        daySel.value = photoDayId;
+      else
+        photoDayId = "";
+      daySel.onchange = () => {
+        photoDayId = daySel.value;
+      };
+      input.onchange = async () => {
+        const batch = Array.from(input.files || []);
+        input.value = "";
+        if (!batch.length)
+          return;
+        busy = true;
+        setStatus("Adding photos…");
+        render();
+        const loaded = [], errors = [];
+        for (const file of batch) {
+          try {
+            loaded.push(await readPhoto(file, photoDayId));
+          } catch {
+            errors.push(file.name);
+          }
+        }
+        project.photos.push(...loaded);
+        busy = false;
+        setStatus(errors.length ? "Could not read " + errors.join(", ") : "");
+        if (loaded.length)
+          mutate();
+        else
+          render();
+      };
+      const pick = el("label", "Choose photos", "wiz-cta-file");
+      pick.append(input);
+      bar.append(pick);
+      if (project.days.length)
+        bar.append(daySel);
+      content.append(bar);
+      if (!project.photos.length)
+        return;
+      const grid = el("div", "", "wiz-photo-grid");
+      project.photos.forEach((photo, i) => {
+        const card = el("div", "", "wiz-photo");
+        const img = el("img");
+        img.src = photo.src;
+        img.alt = photo.name;
+        const meta = el("div", "", "wiz-photo-actions");
+        const lead = btn("Lead", () => {
+          const next = !photo.hero;
+          if (next) {
+            for (const s of project.photos)
+              if (s.dayId === photo.dayId)
+                s.hero = false;
+          }
+          photo.hero = next;
+          mutate();
+        }, "wiz-chip");
+        lead.setAttribute("aria-pressed", String(photo.hero));
+        const cropBtn = btn("Crop", () => {
+          expandedCropPhotoId = expandedCropPhotoId === photo.id ? "" : photo.id;
+          render();
+        }, "wiz-chip");
+        cropBtn.setAttribute("aria-pressed", String(expandedCropPhotoId === photo.id));
+        meta.append(lead, cropBtn);
+        if (photo.gps) {
+          const pinned = Boolean(photo.placeId && project.places.some((p) => p.id === photo.placeId));
+          const pinBtn = btn("Pin GPS", () => {
+            if (pinned) {
+              const placeId = photo.placeId;
+              project.places = project.places.filter((p) => p.id !== placeId);
+              project.visits = project.visits.filter((v) => v.placeId !== placeId);
+              delete photo.placeId;
+            } else {
+              const place = addPlace(project, photo.name.replace(/\.[^.]+$/, ""), photo.gps);
+              photo.placeId = place.id;
+              if (photo.dayId)
+                project.visits.push({ id: crypto.randomUUID(), placeId: place.id, dayId: photo.dayId, overnight: false });
+            }
+            mutate();
+          }, "wiz-chip");
+          pinBtn.setAttribute("aria-pressed", String(pinned));
+          meta.append(pinBtn);
+        }
+        const del = btn("×", () => {
+          project.photos.splice(i, 1);
+          mutate();
+        }, "wiz-icon");
+        del.setAttribute("aria-label", "Remove " + photo.name);
+        meta.append(del);
+        card.append(img, meta);
+        if (expandedCropPhotoId === photo.id) {
+          const sliders = el("div", "", "wiz-crop-box");
+          for (const [labelText, key, min, max] of [["Horizontal crop", "cropX", 0, 1], ["Vertical crop", "cropY", 0, 1], ["Crop zoom", "zoom", 1, 3]]) {
+            const s = el("input");
+            s.type = "range";
+            s.min = String(min);
+            s.max = String(max);
+            s.step = "0.01";
+            s.value = String(photo[key]);
+            s.setAttribute("aria-label", labelText);
+            s.onchange = () => {
+              photo[key] = Number(s.value);
+              mutate();
+            };
+            const l = el("label", labelText.split(" ")[0] + " ");
+            l.append(s);
+            sliders.append(l);
+          }
+          card.append(sliders);
+        }
+        grid.append(card);
+      });
+      content.append(grid);
+    }
+    function renderStep5(project) {
+      if (!project.days.length && !project.photos.length) {
+        content.append(btn("Go to Step 1", () => go(1), "wiz-ghost"));
+        return;
+      }
+      const targets = availablePosters(project);
+      const state = project.output;
+      const target = targets.find((t) => t.key === state.active) || targets[0];
+      const controls = el("div", "", "wiz-export-top");
+      const titleIn = el("input", "", "wiz-input");
+      titleIn.id = "wizard-title";
+      titleIn.type = "text";
+      titleIn.maxLength = 100;
+      titleIn.value = state.title;
+      titleIn.placeholder = "Trip title";
+      titleIn.setAttribute("aria-label", "Trip title");
+      titleIn.onchange = () => {
+        state.title = titleIn.value;
+        mutate();
+      };
+      controls.append(titleIn);
+      if (targets.length > 1) {
+        const targetSel = el("select", "", "wiz-select");
+        targetSel.id = "wizard-poster-target";
+        targetSel.setAttribute("aria-label", "Poster");
+        for (const t of targets) {
+          const opt = el("option", t.name);
+          opt.value = t.key;
+          if (t.key === target.key)
+            opt.selected = true;
+          targetSel.add(opt);
+        }
+        targetSel.onchange = () => {
+          state.active = targetSel.value;
+          mutate();
+        };
+        controls.append(targetSel);
+      }
+      const phone = el("input");
+      phone.id = "wizard-phone";
+      phone.type = "checkbox";
+      phone.checked = state.phone;
+      phone.onchange = () => {
+        state.phone = phone.checked;
+        mutate();
+      };
+      const phoneLbl = el("label", "", "wiz-check");
+      phoneLbl.append(phone, el("span", "Phone"));
+      controls.append(phoneLbl);
+      content.append(controls);
+      const svgText = renderPoster(project, target.key);
+      const preview = el("div", "", "wiz-preview");
+      preview.id = "wizard-preview";
+      if (state.phone)
+        preview.classList.add("is-phone");
+      preview.innerHTML = svgText;
+      wireLabelEditing(preview.querySelector("svg"), target.key, state, mutate, dialog);
+      content.append(preview);
+      const actions = el("div", "", "wiz-export-bar");
+      const fmt = el("select", "", "wiz-select-sm");
+      fmt.id = "wizard-format";
+      fmt.setAttribute("aria-label", "File format");
+      for (const [v, l] of [["jpg", "JPG"], ["png", "PNG"]]) {
+        const opt = el("option", l);
+        opt.value = v;
+        if (state.format === v)
+          opt.selected = true;
+        fmt.add(opt);
+      }
+      fmt.onchange = () => {
+        state.format = fmt.value === "png" ? "png" : "jpg";
+        mutate();
+      };
+      const files = posterFiles(project, targets);
+      const dlBtn = btn("Download " + state.format.toUpperCase(), async () => {
+        dlBtn.disabled = true;
+        setStatus("Preparing…");
+        try {
+          const blob = await rasterize(svgText, state.format);
+          downloadBlob(blob, files.find((f) => f.target.key === target.key).name);
+          setStatus("Downloaded.");
+        } catch (e) {
+          setStatus(e instanceof Error ? e.message : "Download failed.");
+        } finally {
+          dlBtn.disabled = false;
+        }
+      }, "wiz-primary");
+      dlBtn.id = "wizard-download";
+      actions.append(fmt, dlBtn);
+      if (targets.length > 1) {
+        const zipBtn = btn("Download all (ZIP)", async () => {
+          zipBtn.disabled = true;
+          setStatus("Packing ZIP…");
+          try {
+            const format = state.format;
+            const entries = [];
+            for (const f of files) {
+              const blob = await rasterize(renderPoster(project, f.target.key), format);
+              entries.push({ name: f.name, bytes: new Uint8Array(await blob.arrayBuffer()) });
+            }
+            downloadBlob(zip(entries), slug(state.title) + "-posters.zip");
+            setStatus("ZIP downloaded.");
+          } catch (e) {
+            setStatus(e instanceof Error ? e.message : "ZIP failed.");
+          } finally {
+            zipBtn.disabled = false;
+          }
+        }, "wiz-ghost");
+        zipBtn.id = "wizard-download-zip";
+        actions.append(zipBtn);
+      }
+      const backupBtn = btn("Save backup", () => hooks.downloadBackup(), "wiz-link");
+      backupBtn.id = "wizard-backup";
+      actions.append(backupBtn);
+      content.append(actions);
+    }
+    function renderContent() {
+      const project = hooks.getProject();
+      dialog.dataset.step = String(step);
+      counterEl.textContent = step + " / " + STEP_TITLES.length;
+      heading.textContent = STEP_TITLES[step - 1];
+      statusEl.textContent = statusText;
+      dialog.querySelectorAll("[data-step]").forEach((dot) => {
+        const num = Number(dot.dataset.step);
+        if (num === step)
+          dot.setAttribute("aria-current", "step");
+        else
+          dot.removeAttribute("aria-current");
+        dot.classList.toggle("is-done", num < step);
+      });
+      const stepRenderers = [renderStep1, renderStep2, renderStep3, renderStep4, renderStep5];
+      content.replaceChildren();
+      stepRenderers[step - 1](project);
+      const hasContent = project.recordings.length > 0 || project.days.length > 0 || project.photos.length > 0;
+      backBtn.hidden = step === 1;
+      if (step === 1) {
+        nextBtn.hidden = !hasContent;
+        nextBtn.textContent = "Continue";
+        nextBtn.className = "wiz-primary";
+        nextBtn.onclick = () => go(2);
+      } else if (step < STEP_TITLES.length) {
+        nextBtn.hidden = false;
+        const skip = step === 3 && !project.places.some((p) => p.visible) || step === 4 && !project.photos.length;
+        nextBtn.textContent = skip ? "Skip" : "Continue";
+        nextBtn.className = skip ? "wiz-ghost" : "wiz-primary";
+        nextBtn.onclick = () => go(step + 1);
+      } else {
+        nextBtn.hidden = true;
+      }
+      foot.hidden = backBtn.hidden && nextBtn.hidden;
+    }
+    function render() {
+      if (!isOpen())
+        return;
+      renderContent();
+    }
+    function reset() {
+      step = 1;
+      activeDayId = "";
+      showAddPlace = false;
+      photoDayId = "";
+      expandedCropPhotoId = "";
+      statusText = "";
+    }
+    return { show, hide, render, reset, isOpen };
+  }
+
   // src/app.ts
   var node = (id) => document.getElementById(id);
   var fileInput = node("file");
   var restoreInput = node("restore");
   var backupButton = node("backup");
+  var resetButton = node("reset-trip");
+  var openWizardButton = node("open-wizard");
   var status = node("storage-status");
   var message = node("message");
   var itinerary = node("itinerary");
   var assets = node("assets");
   var output = node("output");
+  var wizardDialog = node("wizard-dialog");
   var project = newProject();
   var revision = 0;
   function changed() {
@@ -1878,7 +2830,7 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
       showAssets();
       showOutput();
       changed();
-    }, mergeDay);
+    }, mergeDay, (id) => deleteProjectDay(project, id), (id) => deleteProjectRecording(project, id));
   }
   function showAssets() {
     mountAssets(assets, project, () => {
@@ -1889,16 +2841,15 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
   function showOutput() {
     mountOutput(output, project, changed);
   }
-  function render() {
+  function renderEditor() {
     showItinerary();
     showAssets();
     showOutput();
   }
   function busy(value) {
-    fileInput.disabled = restoreInput.disabled = backupButton.disabled = value;
+    fileInput.disabled = restoreInput.disabled = backupButton.disabled = resetButton.disabled = value;
   }
-  fileInput.onchange = async () => {
-    const files = Array.from(fileInput.files || []);
+  async function importGpxFiles(files) {
     busy(true);
     const errors = [];
     let imported = 0;
@@ -1926,49 +2877,85 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
       }
       if (imported) {
         changed();
-        render();
+        renderEditor();
       }
-      message.textContent = [imported ? "Imported " + imported + " GPX " + (imported === 1 ? "file." : "files.") : "", ...errors].filter(Boolean).join(" ");
+      const summary = [imported ? "Imported " + imported + " GPX " + (imported === 1 ? "file." : "files.") : "", ...errors].filter(Boolean).join(" ");
+      message.textContent = summary;
+      return summary;
     } finally {
       busy(false);
       fileInput.value = "";
     }
-  };
-  backupButton.onclick = () => {
-    const href = URL.createObjectURL(new Blob([backup(project)], { type: "application/json" }));
-    const link = document.createElement("a");
-    link.download = "map-and-posters-backup.json";
-    link.href = href;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(href), 60000);
-  };
-  restoreInput.onchange = async () => {
-    const file = restoreInput.files?.[0];
-    if (!file)
-      return;
+  }
+  function downloadBackup() {
+    downloadBlob(new Blob([backup(project)], { type: "application/json" }), "map-and-posters-backup.json");
+  }
+  async function restoreBackupFile(file) {
     busy(true);
     try {
       const restored = restore(await file.text());
       if ((project.sources.length || project.days.length || project.places.length || project.photos.length) && !window.confirm("Replace the current trip with this backup?"))
-        return;
+        return "";
       const previous = project;
       project = restored;
       try {
-        render();
+        renderEditor();
       } catch (error) {
         project = previous;
-        render();
+        renderEditor();
         throw error;
       }
       changed();
-      message.textContent = "Restored " + file.name;
+      const summary = "Restored " + file.name;
+      message.textContent = summary;
+      return summary;
     } catch (error) {
-      message.textContent = "Could not restore this backup. " + error.message;
+      const summary = "Could not restore this backup. " + error.message;
+      message.textContent = summary;
+      return summary;
     } finally {
       busy(false);
       restoreInput.value = "";
     }
+  }
+  function resetTrip() {
+    const hasData = project.sources.length || project.days.length || project.places.length || project.photos.length;
+    if (hasData && !window.confirm("Start a new trip? Unsaved changes without a backup will be cleared."))
+      return;
+    project = newProject();
+    message.textContent = "";
+    changed();
+    renderEditor();
+    wizard.reset();
+    wizard.render();
+  }
+  var wizard = createWizard(wizardDialog, {
+    getProject: () => project,
+    importGpx: importGpxFiles,
+    downloadBackup,
+    restoreBackup: restoreBackupFile,
+    deleteRecording: (id) => deleteProjectRecording(project, id),
+    deleteDay: (id) => deleteProjectDay(project, id),
+    resetTrip,
+    onMutate: () => {
+      changed();
+      renderEditor();
+    },
+    onExit: () => {
+      renderEditor();
+    }
+  });
+  fileInput.onchange = async () => {
+    await importGpxFiles(Array.from(fileInput.files || []));
   };
+  backupButton.onclick = downloadBackup;
+  resetButton.onclick = resetTrip;
+  restoreInput.onchange = async () => {
+    const file = restoreInput.files?.[0];
+    if (file)
+      await restoreBackupFile(file);
+  };
+  openWizardButton.onclick = () => wizard.show();
   document.querySelectorAll("[data-tab]").forEach((button) => {
     button.onclick = () => {
       const tab = button.dataset.tab;
@@ -1985,8 +2972,9 @@ body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color
     } catch {
       status.textContent = "Local save unavailable · Download a backup";
     } finally {
-      render();
+      renderEditor();
       busy(false);
+      wizard.show();
     }
   }
   start();
