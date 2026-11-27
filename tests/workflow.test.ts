@@ -503,3 +503,78 @@ test('centered wizard walks Steps 1 → 5: split repeated pass, rest day, stops 
     await rm(tmp,{recursive:true,force:true})
   }
 },30000)
+
+test('deleting any day (rest or riding) cleans up project state and New trip resets IndexedDB from scratch', async()=>{
+  const app=await open(),windows=[app.dom.window]
+  try {
+    const dialog=()=>app.doc.querySelector<HTMLDialogElement>('#wizard-dialog')!
+    const route=gpx('Loop.gpx',[[18,98,300],[18,98.01,310],[18.02,98.01,1800],[18,98.02,320]])
+    const waypoints=new File(['<gpx><wpt lat="18" lon="98.01"><name>Camp</name></wpt></gpx>'],'places.gpx',{type:route.type})
+    await app.upload('#wizard-gpx',[route,waypoints])
+    app.button('Continue')
+
+    // Split into Day 1 + Day 2 and add Day 3 rest day
+    app.button('Split here')
+    app.button('+ Rest day')
+    expect(dialog().querySelectorAll('.wiz-day-pill')).toHaveLength(3)
+
+    // Assign a photo to the rest day (Day 3) and overnight visit on Day 1
+    app.button('Continue')
+    const stop=dialog().querySelector<HTMLElement>('.wiz-stop')!
+    stop.querySelector<HTMLInputElement>('input[type=checkbox]')!.click()
+    Array.from(dialog().querySelectorAll('.wiz-stop button')).find(b=>b.textContent==='Overnight')!.click()
+    app.button('Continue')
+    const target=dialog().querySelector<HTMLSelectElement>('#wizard-photo-day')!
+    app.change(target,target.options[3].value)
+    const jpg=await sharp({create:{width:600,height:400,channels:3,background:'#206040'}}).jpeg().toBuffer()
+    await app.upload('#wizard-photos',[new File([jpg],'rest.jpg',{type:'image/jpeg'})])
+
+    // Go back to Step 2 and delete BOTH the rest day AND a riding day inside the wizard dialog
+    const wBtn=(text:string)=>Array.from(dialog().querySelectorAll('button')).find(b=>b.textContent===text)!.click()
+    dialog().querySelector<HTMLButtonElement>('[data-step="2"]')!.click()
+    const pills=()=>Array.from(dialog().querySelectorAll<HTMLButtonElement>('.wiz-day-pill'))
+    pills()[2].click()
+    wBtn('Delete day')
+    expect(pills()).toHaveLength(2)
+
+    // Delete riding Day 1 as well
+    pills()[0].click()
+    wBtn('Delete day')
+    expect(pills()).toHaveLength(1)
+
+    // Verify backup round-trip stays valid (visits cleaned, photo reassigned to Full trip)
+    dialog().querySelector<HTMLButtonElement>('[data-step="5"]')!.click()
+    dialog().querySelector<HTMLButtonElement>('#wizard-backup')!.click()
+    const backupBlob=app.downloads.get('map-and-posters-backup.json')!
+    const parsed=JSON.parse(await backupBlob.text()).project
+    expect(parsed.days).toHaveLength(1)
+    expect(parsed.visits).toHaveLength(0)
+    expect(parsed.photos).toHaveLength(1)
+    expect(parsed.photos[0].dayId).toBe('')
+
+    // Delete the last remaining day in Full editor too (photo stays assigned to Full trip until New trip)
+    wBtn('Full editor')
+    app.button('Delete day')
+    expect(app.doc.querySelector('#itinerary')?.textContent).toContain('Add a rest day')
+
+    // Start fresh with New trip after re-importing a route
+    await app.upload('#file',[route])
+    expect(app.doc.querySelector('#output svg')).not.toBeNull()
+    app.button('Guided wizard')
+    dialog().querySelector<HTMLButtonElement>('[data-step="1"]')!.click()
+    wBtn('New trip')
+    expect(dialog().querySelector('#wizard-heading')?.textContent).toBe('Add your GPX')
+    expect(dialog().querySelectorAll('.wiz-rec')).toHaveLength(0)
+    expect(dialog().querySelector<HTMLButtonElement>('#wizard-next')?.hidden).toBe(true)
+    expect(app.doc.querySelector('#output')?.innerHTML).toBe('')
+    await until(()=>app.doc.querySelector('#storage-status')?.textContent==='Saved on this device','New trip autosave failed')
+
+    // Reload from IndexedDB and verify it opens completely blank!
+    const reloaded=await open(app.store);windows.push(reloaded.dom.window)
+    expect(reloaded.doc.querySelectorAll('#wizard-dialog .wiz-rec')).toHaveLength(0)
+    expect(reloaded.doc.querySelector('#output')?.innerHTML).toBe('')
+  } finally {
+    await Bun.sleep(0)
+    windows.forEach(w=>w.close())
+  }
+})

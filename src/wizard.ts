@@ -11,6 +11,8 @@ export interface WizardHooks {
   importGpx: (files: File[]) => Promise<string>
   downloadBackup: () => void
   restoreBackup: (file: File) => Promise<string>
+  deleteDay: (dayId: string) => void
+  resetTrip: () => void
   onMutate: () => void
   onExit: () => void
 }
@@ -246,7 +248,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     const addMore = el('label', '+ Add GPX', 'wiz-ghost-file')
     addMore.append(gpxInput)
     const tools = el('div', '', 'wiz-inline-tools')
-    tools.append(addMore, restoreLabel())
+    tools.append(addMore, restoreLabel(), btn('New trip', () => hooks.resetTrip(), 'wiz-link wiz-danger'))
     content.append(tools)
   }
 
@@ -277,7 +279,16 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     }, 'wiz-pill-add'))
     content.append(pills)
 
+    const deleteBtn = () => btn('Delete day', () => {
+      hooks.deleteDay(day.id)
+      const next = project.days[Math.min(index, project.days.length - 1)]
+      activeDayId = next?.id || ''
+      setStatus('')
+      mutate()
+    }, 'wiz-link wiz-danger')
+
     if (day.rest) {
+      const restRow = el('div', '', 'wiz-rest-row')
       const nameInput = el('input', '', 'wiz-input')
       nameInput.type = 'text'
       nameInput.maxLength = 80
@@ -285,7 +296,8 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
       nameInput.setAttribute('aria-label', 'Day name')
       nameInput.value = day.name
       nameInput.onchange = () => { day.name = nameInput.value.trim(); mutate() }
-      content.append(nameInput)
+      restRow.append(nameInput, deleteBtn())
+      content.append(restRow)
       return
     }
 
@@ -293,7 +305,10 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     const sources = new Map(project.recordings.map(r => [r.id, r]))
     const visible = ranges.filter(r => sources.get(r.recordingId)?.included)
     const segments: Point[][] = visible.map(r => sources.get(r.recordingId)!.track[r.segment].slice(r.start, r.end + 1))
-    if (!segments.length) return
+    if (!segments.length) {
+      content.append(deleteBtn())
+      return
+    }
 
     const bounds = layout(segments)
     const scale = Math.min(372 / (bounds.east - bounds.west || 1e-8), 172 / (bounds.north - bounds.south || 1e-8))
@@ -310,6 +325,9 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     if (samples.length < 3) {
       const card = routeSilhouette(segments, day.color)
       if (card) content.append(card)
+      const actions = el('div', '', 'wiz-inline-tools')
+      actions.append(deleteBtn())
+      content.append(actions)
       return
     }
 
@@ -382,7 +400,8 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     passes.onchange = () => setSplit(Number(passes.value))
 
     const bar = el('div', '', 'wiz-split-bar')
-    bar.append(readout, btn('Split here', () => {
+    const barActions = el('div', '', 'wiz-stop-actions')
+    barActions.append(deleteBtn(), btn('Split here', () => {
       try {
         const nextDay = setBoundary(project, day, null, samples[split])
         activeDayId = nextDay.id
@@ -390,6 +409,7 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
         mutate()
       } catch (e) { setStatus((e as Error).message) }
     }, 'wiz-ghost'))
+    bar.append(readout, barActions)
 
     draw()
     content.append(map, passes, slider, bar)
@@ -740,5 +760,14 @@ export function createWizard(dialog: HTMLDialogElement, hooks: WizardHooks) {
     renderContent()
   }
 
-  return { show, hide, render, isOpen }
+  function reset() {
+    step = 1
+    activeDayId = ''
+    showAddPlace = false
+    photoDayId = ''
+    expandedCropPhotoId = ''
+    statusText = ''
+  }
+
+  return { show, hide, render, reset, isOpen }
 }

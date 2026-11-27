@@ -4,7 +4,7 @@ import { importRecording } from './itinerary'
 import { mountItinerary } from './itinerary-ui'
 import { parseGpx } from './track'
 import { downloadBlob, mountOutput } from './output'
-import { backup, newProject, restore, type Project } from './project'
+import { backup, deleteProjectDay, newProject, restore, type Project } from './project'
 import { loadProject, saveProject } from './storage'
 import { createWizard } from './wizard'
 
@@ -12,6 +12,7 @@ const node = <T extends HTMLElement>(id: string) => document.getElementById(id) 
 const fileInput = node<HTMLInputElement>('file')
 const restoreInput = node<HTMLInputElement>('restore')
 const backupButton = node<HTMLButtonElement>('backup')
+const resetButton = node<HTMLButtonElement>('reset-trip')
 const openWizardButton = node<HTMLButtonElement>('open-wizard')
 const status = node('storage-status')
 const message = node('message')
@@ -52,7 +53,7 @@ function mergeDay(removed: string, kept: string) {
 }
 
 function showItinerary() {
-  mountItinerary(itinerary, project, () => { showAssets(); showOutput(); changed() }, mergeDay)
+  mountItinerary(itinerary, project, () => { showAssets(); showOutput(); changed() }, mergeDay, id => deleteProjectDay(project, id))
 }
 function showAssets() {
   mountAssets(assets, project, () => { showOutput(); changed() })
@@ -66,7 +67,7 @@ function renderEditor() {
   showOutput()
 }
 function busy(value: boolean) {
-  fileInput.disabled = restoreInput.disabled = backupButton.disabled = value
+  fileInput.disabled = restoreInput.disabled = backupButton.disabled = resetButton.disabled = value
 }
 
 async function importGpxFiles(files: File[]): Promise<string> {
@@ -123,17 +124,31 @@ async function restoreBackupFile(file: File): Promise<string> {
   } finally {busy(false); restoreInput.value=''}
 }
 
+function resetTrip() {
+  const hasData = project.sources.length || project.days.length || project.places.length || project.photos.length
+  if (hasData && !window.confirm('Start a new trip? Unsaved changes without a backup will be cleared.')) return
+  project = newProject()
+  message.textContent = ''
+  changed()
+  renderEditor()
+  wizard.reset()
+  wizard.render()
+}
+
 const wizard = createWizard(wizardDialog, {
   getProject: () => project,
   importGpx: importGpxFiles,
   downloadBackup,
   restoreBackup: restoreBackupFile,
+  deleteDay: id => deleteProjectDay(project, id),
+  resetTrip,
   onMutate: () => { changed(); renderEditor() },
   onExit: () => { renderEditor() },
 })
 
 fileInput.onchange = async () => { await importGpxFiles(Array.from(fileInput.files || [])) }
 backupButton.onclick = downloadBackup
+resetButton.onclick = resetTrip
 restoreInput.onchange = async () => {
   const file=restoreInput.files?.[0]
   if (file) await restoreBackupFile(file)

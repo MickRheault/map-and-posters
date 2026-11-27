@@ -18,7 +18,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
 .wiz-body{padding:20px 28px 16px;overflow-y:auto;overscroll-behavior:contain;display:grid;gap:16px}.wiz-body h1{margin:0;font:600 30px/1.15 Georgia,serif;letter-spacing:-.8px;text-align:center}#wizard-content{display:grid;gap:14px}.wiz-status{margin:0;min-height:1.2em;font-size:13px;color:#81452e;text-align:center}
 .wiz-dropzone{border:2px dashed #aeb9ab;border-radius:14px;background:#f4f6ee;padding:44px 20px;display:grid;place-items:center;transition:border-color .15s,background .15s}.wiz-dropzone.is-drag{border-color:var(--brand);background:#e7efe8}
 .wiz-cta-file{display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;background:var(--brand);color:white;font-weight:650;font-size:16px;border-radius:10px;padding:13px 26px;min-block-size:48px}.wiz-cta-file:hover{background:#184f39}
-.wiz-alt-links{display:flex;justify-content:center;align-items:center;gap:10px;font-size:13px;color:var(--muted)}.wiz-link,.wiz-link-file{position:relative;background:none;border:0;padding:4px;min-block-size:28px;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px}.wiz-link:hover,.wiz-link-file:hover{background:none;color:var(--ink)}.wiz-sep{opacity:.5}
+.wiz-alt-links{display:flex;justify-content:center;align-items:center;gap:10px;font-size:13px;color:var(--muted)}.wiz-link,.wiz-link-file{position:relative;background:none;border:0;padding:4px;min-block-size:28px;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px}.wiz-link:hover,.wiz-link-file:hover{background:none;color:var(--ink)}.wiz-danger{color:#9a3520}.wiz-danger:hover{color:#762311}.wiz-rest-row{display:flex;align-items:center;gap:10px}.wiz-sep{opacity:.5}
 .wiz-route-card{position:relative;background:#eef2e6;border-radius:12px;padding:8px}.wiz-mini-map{width:100%;height:110px;display:block}.wiz-badge{position:absolute;top:10px;right:10px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700}
 .wiz-list{display:grid;gap:8px;max-height:240px;overflow-y:auto;overscroll-behavior:contain}.wiz-rec,.wiz-stop{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fffef8;border:1px solid var(--line);border-radius:10px;padding:8px 12px}.wiz-check{display:flex;align-items:center;gap:8px;min-width:0;cursor:pointer}.wiz-check span{overflow-wrap:anywhere}.wiz-warn{background:#fdebe4;color:#993d20;font-size:12px;font-weight:650;padding:2px 8px;border-radius:999px;white-space:nowrap}.wiz-arrows,.wiz-stop-actions,.wiz-inline-tools,.wiz-pills,.wiz-photo-bar,.wiz-export-top,.wiz-export-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.wiz-inline-tools,.wiz-photo-bar{justify-content:center}.wiz-icon{min-width:30px;min-block-size:30px;padding:2px 8px;font-size:14px}
 .wiz-pills{justify-content:center}.wiz-day-pill{border-radius:999px;padding:5px 12px;font-size:13px;border:1.5px solid var(--line);background:#fffef8}.wiz-day-pill[aria-pressed=true]{border-color:var(--day-color,var(--brand));background:#eef3ec;font-weight:700}.wiz-pill-add{border-radius:999px;border-style:dashed;font-size:13px;padding:5px 12px}
@@ -35,7 +35,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
 <header class="topbar"><div class="brand">Map <span>&amp;</span> Posters</div><div class="top-tools"><button id="open-wizard" class="top-wizard-btn" type="button">Guided wizard</button><span id="storage-status" role="status"></span></div></header>
 <main class="workspace"><aside><h1>Trip editor</h1>
 <label class="file-button">Import GPX<input id="file" type="file" multiple accept=".gpx,application/gpx+xml"></label>
-<div class="backup-tools"><button id="backup" type="button">Download backup</button><label class="restore">Restore backup<input id="restore" aria-label="Restore backup" type="file" accept=".json"></label></div>
+<div class="backup-tools"><button id="backup" type="button">Download backup</button><label class="restore">Restore backup<input id="restore" aria-label="Restore backup" type="file" accept=".json"></label><button id="reset-trip" type="button">New trip</button></div>
 <div id="message" role="status"></div>
 <nav class="tabs" aria-label="Trip editing tools"><button type="button" data-tab="itinerary" aria-pressed="true">Itinerary</button><button type="button" data-tab="assets" aria-pressed="false">Places &amp; photos</button></nav>
 <div id="itinerary"></div><div id="assets" hidden></div></aside>
@@ -445,6 +445,14 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
     project.days.splice(index, 0, day);
     project.manualOrder = true;
     return day;
+  }
+  function removeDay(project, day) {
+    const index = project.days.indexOf(day);
+    if (index < 0)
+      return false;
+    project.days.splice(index, 1);
+    project.manualOrder = true;
+    return true;
   }
   function combinedRanges(days) {
     const result = [];
@@ -1053,10 +1061,10 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
     draw();
     return panel;
   }
-  function mountItinerary(host, project, onChange, onMerge) {
+  function mountItinerary(host, project, onChange, onMerge, onDelete) {
     host.replaceChildren();
     function commit() {
-      mountItinerary(host, project, onChange, onMerge);
+      mountItinerary(host, project, onChange, onMerge, onDelete);
       onChange();
     }
     if (!project.recordings.length && !project.days.length) {
@@ -1134,7 +1142,13 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
         host.dataset.day = rest.id;
         commit();
       };
-      detail.append(button2("Rest day before", () => addRest(0)), button2("Rest day after", () => addRest(1)));
+      detail.append(button2("Rest day before", () => addRest(0)), button2("Rest day after", () => addRest(1)), button2("Delete day", () => {
+        if (onDelete)
+          onDelete(day.id);
+        else
+          removeDay(project, day);
+        commit();
+      }));
       if (day.rest)
         return;
       const track = dayTrack(project, day);
@@ -1735,6 +1749,48 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       output: defaultOutput()
     };
   }
+  function deleteProjectDay(project, dayId) {
+    const day = project.days.find((d) => d.id === dayId);
+    if (!day || !removeDay(project, day))
+      return;
+    project.visits = project.visits.filter((v) => v.dayId !== dayId);
+    let hasTripHero = project.photos.some((p) => p.dayId === "" && p.hero);
+    for (const photo of project.photos) {
+      if (photo.dayId !== dayId)
+        continue;
+      photo.dayId = "";
+      if (photo.hero && hasTripHero)
+        photo.hero = false;
+      else if (photo.hero)
+        hasTripHero = true;
+    }
+    const out = project.output;
+    const removedKeys = new Set(["day:" + dayId]);
+    out.groups = out.groups.filter((group) => {
+      group.dayIds = group.dayIds.filter((id) => id !== dayId);
+      if (group.dayIds.length)
+        return true;
+      removedKeys.add("group:" + group.id);
+      return false;
+    });
+    if (removedKeys.has(out.active))
+      out.active = "trip";
+    out.selected = out.selected.filter((key) => !removedKeys.has(key));
+    for (const settings of [out.labels, out.placeVisibility, out.placeText]) {
+      if (!settings)
+        continue;
+      for (const key of removedKeys)
+        delete settings[key];
+    }
+    const usedRecordings = new Set;
+    for (const d of project.days)
+      for (const r of d.ranges)
+        usedRecordings.add(r.recordingId);
+    for (const v of project.visits)
+      if (v.position)
+        usedRecordings.add(v.position.recordingId);
+    project.recordings = project.recordings.filter((r) => usedRecordings.has(r.id));
+  }
   var format = "map-and-posters";
   var version = 1;
   function backup(project) {
@@ -2101,7 +2157,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       const addMore = el("label", "+ Add GPX", "wiz-ghost-file");
       addMore.append(gpxInput);
       const tools = el("div", "", "wiz-inline-tools");
-      tools.append(addMore, restoreLabel());
+      tools.append(addMore, restoreLabel(), btn("New trip", () => hooks.resetTrip(), "wiz-link wiz-danger"));
       content.append(tools);
     }
     function renderStep2(project) {
@@ -2133,7 +2189,15 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
         mutate();
       }, "wiz-pill-add"));
       content.append(pills);
+      const deleteBtn = () => btn("Delete day", () => {
+        hooks.deleteDay(day.id);
+        const next = project.days[Math.min(index, project.days.length - 1)];
+        activeDayId = next?.id || "";
+        setStatus("");
+        mutate();
+      }, "wiz-link wiz-danger");
       if (day.rest) {
+        const restRow = el("div", "", "wiz-rest-row");
         const nameInput = el("input", "", "wiz-input");
         nameInput.type = "text";
         nameInput.maxLength = 80;
@@ -2144,15 +2208,18 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
           day.name = nameInput.value.trim();
           mutate();
         };
-        content.append(nameInput);
+        restRow.append(nameInput, deleteBtn());
+        content.append(restRow);
         return;
       }
       const ranges = combinedRanges([day]);
       const sources = new Map(project.recordings.map((r) => [r.id, r]));
       const visible = ranges.filter((r) => sources.get(r.recordingId)?.included);
       const segments = visible.map((r) => sources.get(r.recordingId).track[r.segment].slice(r.start, r.end + 1));
-      if (!segments.length)
+      if (!segments.length) {
+        content.append(deleteBtn());
         return;
+      }
       const bounds = layout(segments);
       const scale = Math.min(372 / (bounds.east - bounds.west || 0.00000001), 172 / (bounds.north - bounds.south || 0.00000001));
       const projectAxis = (x, center, offset) => offset + (x - center) * scale;
@@ -2173,6 +2240,9 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
         const card = routeSilhouette(segments, day.color);
         if (card)
           content.append(card);
+        const actions = el("div", "", "wiz-inline-tools");
+        actions.append(deleteBtn());
+        content.append(actions);
         return;
       }
       const map = svgEl("svg", { viewBox: "0 0 400 200", class: "wiz-split-map", "aria-label": "Choose a boundary on the recorded route" });
@@ -2251,7 +2321,8 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       };
       passes.onchange = () => setSplit(Number(passes.value));
       const bar = el("div", "", "wiz-split-bar");
-      bar.append(readout, btn("Split here", () => {
+      const barActions = el("div", "", "wiz-stop-actions");
+      barActions.append(deleteBtn(), btn("Split here", () => {
         try {
           const nextDay = setBoundary(project, day, null, samples[split]);
           activeDayId = nextDay.id;
@@ -2261,6 +2332,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
           setStatus(e.message);
         }
       }, "wiz-ghost"));
+      bar.append(readout, barActions);
       draw();
       content.append(map, passes, slider, bar);
     }
@@ -2643,7 +2715,15 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
         return;
       renderContent();
     }
-    return { show, hide, render, isOpen };
+    function reset() {
+      step = 1;
+      activeDayId = "";
+      showAddPlace = false;
+      photoDayId = "";
+      expandedCropPhotoId = "";
+      statusText = "";
+    }
+    return { show, hide, render, reset, isOpen };
   }
 
   // src/app.ts
@@ -2651,6 +2731,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
   var fileInput = node("file");
   var restoreInput = node("restore");
   var backupButton = node("backup");
+  var resetButton = node("reset-trip");
   var openWizardButton = node("open-wizard");
   var status = node("storage-status");
   var message = node("message");
@@ -2697,7 +2778,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       showAssets();
       showOutput();
       changed();
-    }, mergeDay);
+    }, mergeDay, (id) => deleteProjectDay(project, id));
   }
   function showAssets() {
     mountAssets(assets, project, () => {
@@ -2714,7 +2795,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
     showOutput();
   }
   function busy(value) {
-    fileInput.disabled = restoreInput.disabled = backupButton.disabled = value;
+    fileInput.disabled = restoreInput.disabled = backupButton.disabled = resetButton.disabled = value;
   }
   async function importGpxFiles(files) {
     busy(true);
@@ -2785,11 +2866,24 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       restoreInput.value = "";
     }
   }
+  function resetTrip() {
+    const hasData = project.sources.length || project.days.length || project.places.length || project.photos.length;
+    if (hasData && !window.confirm("Start a new trip? Unsaved changes without a backup will be cleared."))
+      return;
+    project = newProject();
+    message.textContent = "";
+    changed();
+    renderEditor();
+    wizard.reset();
+    wizard.render();
+  }
   var wizard = createWizard(wizardDialog, {
     getProject: () => project,
     importGpx: importGpxFiles,
     downloadBackup,
     restoreBackup: restoreBackupFile,
+    deleteDay: (id) => deleteProjectDay(project, id),
+    resetTrip,
     onMutate: () => {
       changed();
       renderEditor();
@@ -2802,6 +2896,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
     await importGpxFiles(Array.from(fileInput.files || []));
   };
   backupButton.onclick = downloadBackup;
+  resetButton.onclick = resetTrip;
   restoreInput.onchange = async () => {
     const file = restoreInput.files?.[0];
     if (file)
