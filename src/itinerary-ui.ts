@@ -1,5 +1,5 @@
 import {layout, type Point} from './track'
-import {combinedRanges,dayName,dayTrack,insertRestDay,joinDays,moveRecording,possibleOverlap,removeDay,setBoundary,type Day,type Itinerary,type PointRef} from './itinerary'
+import {combinedRanges,dayName,dayTrack,insertRestDay,joinDays,moveRecording,pickBoundaryPasses,possibleOverlap,removeDay,setBoundary,type Day,type Itinerary,type PointRef} from './itinerary'
 
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,text='') {
   const node=document.createElement(tag)
@@ -112,20 +112,7 @@ function boundaryEditor(project:Itinerary,left:Day,right:Day|null,commit:()=>voi
   }
   map.onclick=ev=>{
     const location=pointer(ev,map,200)
-    const ds=samples.map(p=>Math.hypot(p.x-location.x,p.y-location.y))
-    let best=Infinity
-    for(let i=1;i<ds.length-1;i++) best=Math.min(best,ds[i])
-    // Each local distance minimum identifies one approach, including short
-    // out-and-back detours that never leave the pointer's hit radius.
-    const candidates:number[]=[]
-    for(let i=1;i<ds.length-1;i++){
-      if(ds[i]>best+3) continue
-      const first=i
-      while(i+1<ds.length-1 && samples[i+1].run===samples[first].run && Math.abs(ds[i+1]-ds[first])<1e-6) i++
-      const before=first===1 || samples[first-1].run!==samples[first].run ? Infinity : ds[first-1]
-      const after=i===ds.length-2 || samples[i+1].run!==samples[first].run ? Infinity : ds[i+1]
-      if(ds[first]<=before && ds[first]<=after) candidates.push(first)
-    }
+    const candidates=pickBoundaryPasses(samples,location)
     if(!candidates.length) return
     passes.replaceChildren(...candidates.map((i,n)=>option('Pass '+(n+1)+' · '+samples[i].km.toFixed(1)+' km · '+sources.get(samples[i].recordingId)!.name,String(i))))
     passLabel.hidden=candidates.length<2

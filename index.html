@@ -6,7 +6,7 @@
 <title>Map &amp; Posters — Trip editor</title>
 <style>
 :root{color-scheme:light;--ink:#173b33;--muted:#52685e;--paper:#fcfaf2;--line:#c9cfc1;--accent:#b45132;--brand:#206248;font:15px/1.45 "DM Sans",system-ui,sans-serif;color:var(--ink);background:#e4e6dc}*{box-sizing:border-box}
-body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color:#fffae9;display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap}.brand{font:600 22px Georgia,serif;letter-spacing:-.5px}.brand span{color:#e4b97f}.top-tools{display:flex;align-items:center;gap:14px;flex-wrap:wrap}#storage-status{font-size:13px}.top-wizard-btn{background:#fcfaf2;color:var(--ink);border:0;border-radius:6px;padding:6px 12px;min-block-size:32px;font-size:13px;font-weight:650}.top-wizard-btn:hover{background:#e9eee4}.workspace{display:grid;grid-template-columns:minmax(330px,37%) minmax(0,1fr);min-height:calc(100vh - 62px)}aside{background:var(--paper);padding:24px clamp(18px,2.5vw,42px);border-right:1px solid var(--line)}h1{margin:0 0 18px;font:42px/1 Georgia,serif;letter-spacing:-1.8px}h2{font:26px/1.15 Georgia,serif;margin:18px 0 10px}h3{font-size:16px;margin:18px 0 8px}button,input,select,textarea{font:inherit;color:inherit;max-width:100%}button,input::file-selector-button,select{background:#fffef8;border:1px solid #aab7a8;border-radius:6px;padding:6px 10px;min-block-size:34px;cursor:pointer}button:hover{border-color:#316b56;background:#e9eee4}button:disabled{opacity:.5;cursor:default}input[type=text],input[type=number],input[type=url],textarea{background:white;border:1px solid #acb8ab;border-radius:6px;padding:8px 10px}input[type=range],input[type=checkbox]{accent-color:#23634d}button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible,select:focus-visible,h1:focus-visible{outline:3px solid #bc6931;outline-offset:2px}
+body{margin:0}.topbar{padding:15px clamp(20px,3vw,52px);background:#183e34;color:#fffae9;display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap}.brand{font:600 22px Georgia,serif;letter-spacing:-.5px}.brand span{color:#e4b97f}.top-tools{display:flex;align-items:center;gap:14px;flex-wrap:wrap}#storage-status{font-size:13px}.top-wizard-btn{background:#fcfaf2;color:var(--ink);border:0;border-radius:6px;padding:6px 12px;min-block-size:32px;font-size:13px;font-weight:650}.top-wizard-btn:hover{background:#e9eee4}.workspace{display:grid;grid-template-columns:minmax(330px,37%) minmax(0,1fr);min-height:calc(100vh - 62px)}aside{background:var(--paper);padding:24px clamp(18px,2.5vw,42px);border-right:1px solid var(--line)}h1{margin:0 0 18px;font:42px/1 Georgia,serif;letter-spacing:-1.8px}h2{font:26px/1.15 Georgia,serif;margin:18px 0 10px}h3{font-size:16px;margin:18px 0 8px}button,input,select,textarea{font:inherit;color:inherit;max-width:100%}button,input::file-selector-button,select{background:#fffef8;border:1px solid #aab7a8;border-radius:6px;padding:6px 10px;min-block-size:34px;cursor:pointer}button:hover{border-color:#316b56;background:#e9eee4}button:disabled{opacity:.5;cursor:default}input[type=text],input[type=number],input[type=url],input[type=search],input[type=password],textarea{background:white;border:1px solid #acb8ab;border-radius:6px;padding:8px 10px}input[type=range],input[type=checkbox]{accent-color:#23634d}button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible,select:focus-visible,textarea:focus-visible,h1:focus-visible{outline:3px solid #bc6931;outline-offset:2px}
 .file-button{display:inline-flex;align-items:center;cursor:pointer;background:var(--brand);color:white;font-weight:650;border-radius:6px;padding:9px 16px;position:relative}.file-button input,.restore input,.wiz-cta-file input,.wiz-ghost-file input,.wiz-link-file input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}.file-button:focus-within,.restore:focus-within,.wiz-cta-file:focus-within,.wiz-ghost-file:focus-within,.wiz-link-file:focus-within{outline:3px solid #bc6931;outline-offset:2px}.backup-tools{display:flex;align-items:center;gap:12px;margin:16px 0 6px}.restore{position:relative;text-decoration:underline;cursor:pointer}#message{font-size:14px;color:#81452e;overflow-wrap:anywhere}.tabs{display:flex;border-bottom:1px solid var(--line);gap:8px;margin:20px 0 12px}.tabs button{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;font-weight:650}.tabs button[aria-pressed=true]{border-color:var(--accent)}fieldset{border:1px solid var(--line);border-radius:6px;margin:12px 0;padding:10px;min-width:0}legend{font-weight:600}aside svg{max-width:100%;height:auto}details{margin:10px 0}summary{cursor:pointer;font-weight:600}#output{padding:20px clamp(14px,2vw,38px);min-width:0}#output svg{max-width:100%;height:auto}#output:empty::after{content:"Import a recording to preview your poster.";color:var(--muted)}[hidden]{display:none!important}
 #assets label,#itinerary label{display:grid;gap:3px;margin:8px 0}#assets label:has(input[type=checkbox]),#itinerary label:has(input[type=checkbox]){display:flex;align-items:center;gap:6px}#assets details{padding:6px 0;border-bottom:1px solid var(--line)}#assets button,#itinerary button{margin:3px 4px 3px 0}#assets summary,.recording-row{overflow-wrap:anywhere}.recording-row small{display:block;color:#81452e}aside label input[type=range]{width:100%}
 dialog#wizard-dialog{width:min(540px,calc(100vw - 32px));max-height:calc(100dvh - 32px);margin:auto;padding:0;border:0;border-radius:18px;background:var(--paper);color:var(--ink);box-shadow:0 28px 80px rgba(10,30,24,.38);overflow:hidden}
@@ -22,13 +22,15 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
 .wiz-route-card{position:relative;background:#eef2e6;border-radius:12px;padding:8px}.wiz-mini-map{width:100%;height:110px;display:block}.wiz-badge{position:absolute;top:10px;right:10px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700}
 .wiz-list{display:grid;gap:8px;max-height:240px;overflow-y:auto;overscroll-behavior:contain}.wiz-rec,.wiz-stop{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fffef8;border:1px solid var(--line);border-radius:10px;padding:8px 12px}.wiz-check{display:flex;align-items:center;gap:8px;min-width:0;cursor:pointer}.wiz-check span{overflow-wrap:anywhere}.wiz-warn{background:#fdebe4;color:#993d20;font-size:12px;font-weight:650;padding:2px 8px;border-radius:999px;white-space:nowrap}.wiz-arrows,.wiz-stop-actions,.wiz-inline-tools,.wiz-pills,.wiz-photo-bar,.wiz-export-top,.wiz-export-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.wiz-inline-tools,.wiz-photo-bar{justify-content:center}.wiz-icon{min-width:30px;min-block-size:30px;padding:2px 8px;font-size:14px}
 .wiz-pills{justify-content:center}.wiz-day-pill{border-radius:999px;padding:5px 12px;font-size:13px;border:1.5px solid var(--line);background:#fffef8}.wiz-day-pill[aria-pressed=true]{border-color:var(--day-color,var(--brand));background:#eef3ec;font-weight:700}.wiz-pill-add{border-radius:999px;border-style:dashed;font-size:13px;padding:5px 12px}
-.wiz-split-map{width:100%;aspect-ratio:2/1;height:auto;background:#eef2e6;border-radius:10px;cursor:crosshair;display:block}.wiz-empty-day{background:#f4f6ee;border:1px solid var(--line);border-radius:12px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}.wiz-empty-day p{margin:0}.wiz-slider{width:100%}.wiz-split-bar{display:flex;align-items:center;justify-content:space-between;gap:10px}.wiz-meta{font-size:13px;color:var(--muted);font-weight:600}
-.wiz-chip{border-radius:999px;font-size:12px;padding:4px 10px;min-block-size:28px}.wiz-chip[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:white}.wiz-add-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}.wiz-input{width:100%;min-width:0}.wiz-select,.wiz-select-sm{min-block-size:34px;font-size:14px}.wiz-select-sm{font-size:13px;padding:4px 8px;min-block-size:30px}
+.wiz-map-wrap{position:relative}.wiz-split-map{width:100%;aspect-ratio:2/1;height:auto;background:#eef2e6;border-radius:10px;cursor:crosshair;display:block;user-select:none}.wiz-split-map.is-zoomed{touch-action:none}.wiz-split-map.is-panning{cursor:grabbing}.wiz-map-controls{position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:4px;background:rgba(252,250,242,.92);border:1px solid var(--line);border-radius:8px;padding:3px;box-shadow:0 2px 8px rgba(23,59,51,.12)}.wiz-map-btn{min-inline-size:28px;min-block-size:28px;padding:2px 8px;border-radius:6px;font-size:13px;font-weight:650;line-height:1}.wiz-map-reset{font-size:12px;padding:2px 9px}.wiz-empty-day{background:#f4f6ee;border:1px solid var(--line);border-radius:12px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}.wiz-empty-day p{margin:0}.wiz-slider{width:100%}.wiz-split-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.wiz-split-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.wiz-meta{font-size:13px;color:var(--muted);font-weight:600}
+.wiz-ai{margin:2px 0 0;border:1px solid var(--line);border-radius:12px;background:#f7f8f2;padding:8px 12px}.wiz-ai-trigger{font-size:13px;color:var(--brand);min-block-size:28px;display:list-item}.wiz-ai-panel{display:flex;flex-direction:column;gap:10px;margin-top:10px}.wiz-ai-field{display:grid;gap:4px;font-size:13px}.wiz-ai-field label{font-weight:600}.wiz-ai-prompt{resize:vertical;min-height:56px}.wiz-ai-hint{margin:0;font-size:12px;color:var(--muted)}.wiz-ai-settings{margin:0;padding:8px 10px;border:1px solid #d7dcd0;border-radius:8px;background:var(--paper)}.wiz-ai-settings summary{font-size:12px;color:var(--muted);min-block-size:24px}.wiz-ai-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.wiz-ai-span{grid-column:1/-1}.wiz-ai-settings-foot,.wiz-ai-actions,.wiz-ai-review-head,.wiz-ai-review-actions,.wiz-ai-pass-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.wiz-ai-settings-foot{margin-top:8px}.wiz-ai-actions{justify-content:flex-start}.wiz-ai-error{margin:0;padding:8px 10px;border-radius:8px;background:#fdebe4;color:#8e2f19;font-size:13px}.wiz-ai-error p{margin:0}.wiz-ai-review{display:flex;flex-direction:column;gap:10px;padding:10px 12px;border:1px solid #b5c3b6;border-radius:10px;background:#fffef8}.wiz-ai-plan{list-style:none;margin:0;padding:0;display:grid;gap:8px}.wiz-ai-day{display:grid;gap:6px;padding:8px 10px;border:1px solid #dde2d6;border-radius:8px;background:#f9faf5}.wiz-ai-day-main{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}.wiz-ai-badge{background:#e5efe8;color:var(--ink);font-size:12px;font-weight:650;padding:2px 8px;border-radius:999px}.wiz-ai-pass-row{font-size:12px;justify-content:flex-start}.wiz-ai-review-actions{justify-content:flex-end}
+.wiz-chip{border-radius:999px;font-size:12px;padding:4px 10px;min-block-size:28px}.wiz-chip[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:white}.wiz-add-panel{display:grid;gap:8px}.wiz-add-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}.wiz-input{width:100%;min-width:0}.wiz-select,.wiz-select-sm{min-block-size:34px;font-size:14px}.wiz-select-sm{font-size:13px;padding:4px 8px;min-block-size:30px}
+.wiz-suggestions{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:180px;overflow-y:auto;overscroll-behavior:contain}.wiz-suggestion{width:100%;text-align:left;display:grid;gap:1px;padding:7px 10px;background:#fffef8;border:1px solid var(--line);border-radius:8px;min-block-size:38px}.wiz-suggestion strong{font-size:14px;font-weight:650}.wiz-suggestion span{font-size:12px;color:var(--muted)}.wiz-key-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.wiz-key-panel,.wiz-find-box{display:grid;gap:6px;padding:10px;background:#f4f6ee;border:1px solid var(--line);border-radius:10px}.wiz-key-label{font-size:12px;font-weight:650;color:var(--ink)}.wiz-key-row{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.wiz-key-note{font-size:12px;color:var(--muted)}.wiz-find-row{display:flex;align-items:center;gap:8px}
 .wiz-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}.wiz-photo{background:#fffef8;border:1px solid var(--line);border-radius:10px;padding:8px;display:grid;gap:8px}.wiz-photo img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;display:block}.wiz-photo-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.wiz-crop-box{display:grid;gap:4px;font-size:12px}.wiz-crop-box label{display:grid;gap:2px}.wiz-crop-box input{width:100%}
 .wiz-export-top{display:grid;grid-template-columns:1fr auto auto;gap:8px}.wiz-preview{margin:0 auto;width:min(100%,420px);max-height:46vh;overflow-y:auto;overscroll-behavior:contain;line-height:0;border-radius:8px;box-shadow:0 6px 20px rgba(24,62,52,.16)}.wiz-preview.is-phone{width:min(100%,300px)}.wiz-preview svg{width:100%;height:auto}.wiz-export-bar{justify-content:center}
 .wiz-primary{background:var(--brand);border-color:var(--brand);color:white;font-weight:650;padding:8px 18px}.wiz-primary:hover{background:#184f39;border-color:#184f39}.wiz-ghost,.wiz-ghost-file{position:relative;display:inline-flex;align-items:center;justify-content:center;background:#f2f5ec;border:1px solid #b5c0b2;border-radius:6px;padding:7px 14px;min-block-size:34px;font-weight:600;cursor:pointer}.wiz-ghost:hover,.wiz-ghost-file:hover{background:#e5ece1}
 .wiz-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 28px 20px;border-top:1px solid #e2e6da}.wiz-foot button:only-child,.wiz-foot #wizard-back[hidden]+#wizard-next{margin-left:auto}
-@media(max-width:850px){.workspace{grid-template-columns:minmax(300px,42%) minmax(0,1fr)}}@media(max-width:660px){.workspace{display:block}aside{border-right:0}.topbar{gap:8px}.wiz-add-row,.wiz-export-top{grid-template-columns:1fr}}
+@media(max-width:850px){.workspace{grid-template-columns:minmax(300px,42%) minmax(0,1fr)}}@media(max-width:660px){.workspace{display:block}aside{border-right:0}.topbar{gap:8px}.wiz-add-row,.wiz-export-top,.wiz-key-row,.wiz-ai-settings-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -517,6 +519,74 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
         matched++;
     return smaller.size > 0 && matched / smaller.size >= 0.25;
   }
+  function pickBoundaryPasses(samples, point, options = {}) {
+    if (samples.length < 3)
+      return [];
+    const zoom = Math.max(1, options.zoom ?? 1);
+    const hitMargin = (options.hitMargin ?? 3) / zoom;
+    const leaveMargin = Math.max(hitMargin * 2, (options.leaveMargin ?? 12) / zoom);
+    const ds = samples.map((p) => Math.hypot(p.x - point.x, p.y - point.y));
+    let best = Infinity;
+    for (let i = 1;i < ds.length - 1; i++)
+      if (ds[i] < best)
+        best = ds[i];
+    if (!Number.isFinite(best))
+      return [];
+    const hitLimit = best + hitMargin;
+    const leaveLimit = best + leaveMargin;
+    const passes = [];
+    let activeIndex = -1;
+    let activeDist = Infinity;
+    for (let i = 1;i < ds.length - 1; i++) {
+      const d = ds[i];
+      if (d <= hitLimit) {
+        if (activeIndex < 0 || d < activeDist) {
+          activeIndex = i;
+          activeDist = d;
+        }
+      } else if (activeIndex >= 0 && d > leaveLimit) {
+        passes.push(activeIndex);
+        activeIndex = -1;
+        activeDist = Infinity;
+      }
+    }
+    if (activeIndex >= 0)
+      passes.push(activeIndex);
+    return passes;
+  }
+  var MAX_MAP_ZOOM = 16;
+  function clampMapView(view, width = 400, height = 200) {
+    const zoom = Math.max(1, Math.min(MAX_MAP_ZOOM, Number.isFinite(view.zoom) ? view.zoom : 1));
+    const vw = width / zoom, vh = height / zoom;
+    const x = Math.max(0, Math.min(width - vw, Number.isFinite(view.x) ? view.x : 0));
+    const y = Math.max(0, Math.min(height - vh, Number.isFinite(view.y) ? view.y : 0));
+    return { zoom, x, y };
+  }
+  function zoomMapView(view, nextZoom, anchor, width = 400, height = 200) {
+    const cur = clampMapView(view, width, height);
+    const zoom = Math.max(1, Math.min(MAX_MAP_ZOOM, Number.isFinite(nextZoom) ? nextZoom : cur.zoom));
+    const curVw = width / cur.zoom, curVh = height / cur.zoom;
+    const nextVw = width / zoom, nextVh = height / zoom;
+    const rx = (anchor.x - cur.x) / curVw;
+    const ry = (anchor.y - cur.y) / curVh;
+    return clampMapView({ zoom, x: anchor.x - rx * nextVw, y: anchor.y - ry * nextVh }, width, height);
+  }
+  function panMapView(view, dxPx, dyPx, rect, width = 400, height = 200) {
+    const cur = clampMapView(view, width, height);
+    if (cur.zoom <= 1)
+      return cur;
+    const vw = width / cur.zoom, vh = height / cur.zoom;
+    const sx = vw / (rect.width || width), sy = vh / (rect.height || height);
+    return clampMapView({ zoom: cur.zoom, x: cur.x - dxPx * sx, y: cur.y - dyPx * sy }, width, height);
+  }
+  function clientToMapPoint(rect, view, clientX, clientY, width = 400, height = 200) {
+    const cur = clampMapView(view, width, height);
+    const vw = width / cur.zoom, vh = height / cur.zoom;
+    return {
+      x: cur.x + (clientX - rect.left) / (rect.width || 1) * vw,
+      y: cur.y + (clientY - rect.top) / (rect.height || 1) * vh
+    };
+  }
 
   // src/assets-ui.ts
   function element(tag, text = "") {
@@ -1000,22 +1070,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
     };
     map.onclick = (ev) => {
       const location = pointer(ev, map, 200);
-      const ds = samples.map((p) => Math.hypot(p.x - location.x, p.y - location.y));
-      let best = Infinity;
-      for (let i = 1;i < ds.length - 1; i++)
-        best = Math.min(best, ds[i]);
-      const candidates = [];
-      for (let i = 1;i < ds.length - 1; i++) {
-        if (ds[i] > best + 3)
-          continue;
-        const first = i;
-        while (i + 1 < ds.length - 1 && samples[i + 1].run === samples[first].run && Math.abs(ds[i + 1] - ds[first]) < 0.000001)
-          i++;
-        const before = first === 1 || samples[first - 1].run !== samples[first].run ? Infinity : ds[first - 1];
-        const after = i === ds.length - 2 || samples[i + 1].run !== samples[first].run ? Infinity : ds[i + 1];
-        if (ds[first] <= before && ds[first] <= after)
-          candidates.push(first);
-      }
+      const candidates = pickBoundaryPasses(samples, location);
       if (!candidates.length)
         return;
       passes.replaceChildren(...candidates.map((i, n) => option2("Pass " + (n + 1) + " · " + samples[i].km.toFixed(1) + " km · " + sources.get(samples[i].recordingId).name, String(i))));
@@ -1963,6 +2018,1145 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
     });
   }
 
+  // src/ai-split.ts
+  var AI_STORAGE_KEYS = {
+    provider: "map-and-posters:ai-provider",
+    apiKey: "map-and-posters:ai-api-key",
+    model: "map-and-posters:ai-model",
+    endpoint: "map-and-posters:ai-endpoint",
+    googlePlacesKey: "map-and-posters:google-places-key"
+  };
+  var DEFAULT_MODELS = {
+    openai: "gpt-4o-mini",
+    gemini: "gemini-2.5-flash"
+  };
+  var DEFAULT_ENDPOINTS = {
+    openai: "https://api.openai.com/v1/chat/completions",
+    gemini: "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+  };
+  var DAY_PALETTE = ["#aa4839", "#25678a", "#7760a2", "#167c79", "#a15513", "#8f4466", "#4e7040", "#4f5899"];
+  function defaultStorage() {
+    try {
+      if (typeof globalThis.localStorage !== "undefined")
+        return globalThis.localStorage;
+    } catch {}
+    return null;
+  }
+  function readKey(storage, key) {
+    if (!storage)
+      return "";
+    try {
+      return storage.getItem(key) ?? "";
+    } catch {
+      return "";
+    }
+  }
+  function writeKey(storage, key, value) {
+    if (!storage)
+      return;
+    try {
+      if (value)
+        storage.setItem(key, value);
+      else
+        storage.removeItem(key);
+    } catch {}
+  }
+  function validateEndpointUrl(raw) {
+    const trimmed = raw.trim();
+    if (!trimmed)
+      return "";
+    let parsed;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      throw new Error("Enter a valid HTTPS endpoint URL (or http://localhost for a local server).");
+    }
+    const isLocal = parsed.protocol === "http:" && (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1");
+    if (parsed.protocol !== "https:" && !isLocal) {
+      throw new Error("Custom AI endpoints must use HTTPS (or http://localhost / http://127.0.0.1).");
+    }
+    return parsed.toString();
+  }
+  function loadAiConfig(storage = defaultStorage()) {
+    const rawProvider = readKey(storage, AI_STORAGE_KEYS.provider);
+    const provider = rawProvider === "gemini" ? "gemini" : "openai";
+    const model = readKey(storage, AI_STORAGE_KEYS.model).trim() || DEFAULT_MODELS[provider];
+    let endpoint = "";
+    try {
+      endpoint = validateEndpointUrl(readKey(storage, AI_STORAGE_KEYS.endpoint));
+    } catch {
+      endpoint = "";
+    }
+    return {
+      provider,
+      apiKey: readKey(storage, AI_STORAGE_KEYS.apiKey).trim(),
+      model,
+      endpoint,
+      googlePlacesKey: readKey(storage, AI_STORAGE_KEYS.googlePlacesKey).trim()
+    };
+  }
+  function saveAiConfig(patch, storage = defaultStorage()) {
+    const current = loadAiConfig(storage);
+    const provider = patch.provider === "gemini" ? "gemini" : patch.provider === "openai" ? "openai" : current.provider;
+    const endpoint = patch.endpoint !== undefined ? validateEndpointUrl(patch.endpoint) : current.endpoint;
+    const rawModel = patch.model !== undefined ? patch.model.trim() : current.model;
+    const model = rawModel || DEFAULT_MODELS[provider];
+    const next = {
+      provider,
+      apiKey: patch.apiKey !== undefined ? patch.apiKey.trim() : current.apiKey,
+      model,
+      endpoint,
+      googlePlacesKey: patch.googlePlacesKey !== undefined ? patch.googlePlacesKey.trim() : current.googlePlacesKey
+    };
+    writeKey(storage, AI_STORAGE_KEYS.provider, next.provider);
+    writeKey(storage, AI_STORAGE_KEYS.apiKey, next.apiKey);
+    writeKey(storage, AI_STORAGE_KEYS.model, next.model);
+    writeKey(storage, AI_STORAGE_KEYS.endpoint, next.endpoint);
+    writeKey(storage, AI_STORAGE_KEYS.googlePlacesKey, next.googlePlacesKey);
+    return next;
+  }
+  function clearAiConfig(storage = defaultStorage()) {
+    for (const key of Object.values(AI_STORAGE_KEYS))
+      writeKey(storage, key, "");
+  }
+  function collectRouteSamples(project) {
+    const included = new Map(project.recordings.filter((r) => r.included).map((r) => [r.id, r]));
+    const ridingRanges = combinedRanges(project.days.filter((d) => !d.rest)).filter((r) => included.has(r.recordingId));
+    const samples = [];
+    let km = 0;
+    let west = Infinity, east = -Infinity, south = Infinity, north = -Infinity;
+    for (const range of ridingRanges) {
+      const line = included.get(range.recordingId)?.track[range.segment];
+      if (!line)
+        continue;
+      for (let i = range.start;i <= range.end && i < line.length; i++) {
+        const pt = line[i];
+        if (i > range.start)
+          km += distance(line[i - 1], pt);
+        west = Math.min(west, pt.lon);
+        east = Math.max(east, pt.lon);
+        south = Math.min(south, pt.lat);
+        north = Math.max(north, pt.lat);
+        samples.push({
+          index: samples.length,
+          recordingId: range.recordingId,
+          segment: range.segment,
+          point: i,
+          lat: pt.lat,
+          lon: pt.lon,
+          km
+        });
+      }
+    }
+    if (!samples.length)
+      return { samples, totalKm: 0, bounds: null };
+    return { samples, totalKm: km, bounds: { west, south, east, north } };
+  }
+  function paddedBounds(bounds) {
+    const latPad = Math.max(0.15, (bounds.north - bounds.south) * 0.15);
+    const lonPad = Math.max(0.15, (bounds.east - bounds.west) * 0.15);
+    return {
+      west: Math.max(-180, bounds.west - lonPad),
+      east: Math.min(180, bounds.east + lonPad),
+      south: Math.max(-90, bounds.south - latPad),
+      north: Math.min(90, bounds.north + latPad)
+    };
+  }
+  function minDistanceToSamples(coords, samples) {
+    const target = { lat: coords.lat, lon: coords.lon, ele: null };
+    let best = Infinity;
+    for (const s of samples) {
+      const d = distance(target, { lat: s.lat, lon: s.lon, ele: null });
+      if (d < best)
+        best = d;
+    }
+    return best;
+  }
+  function findTrackPasses(samples, coords, options) {
+    if (!samples.length || !validCoordinates(coords.lat, coords.lon))
+      return [];
+    const maxSnapKm = options?.maxSnapKm ?? 25;
+    const allowEndpoints = options?.allowEndpoints ?? false;
+    const separationKm = options?.separationKm ?? 1;
+    const target = { lat: coords.lat, lon: coords.lon, ele: null };
+    const ds = samples.map((s) => distance(target, { lat: s.lat, lon: s.lon, ele: null }));
+    let closest = Infinity;
+    for (const d of ds)
+      if (d < closest)
+        closest = d;
+    if (!Number.isFinite(closest) || closest > maxSnapKm)
+      return [];
+    const tolerance = Math.min(2.5, Math.max(0.5, closest * 0.5));
+    const limit = closest + tolerance;
+    const rawMinima = [];
+    for (let i = 0;i < ds.length; i++) {
+      if (ds[i] > limit)
+        continue;
+      const first = i;
+      while (i + 1 < ds.length && Math.abs(ds[i + 1] - ds[first]) < 0.000001)
+        i++;
+      const before = first === 0 ? Infinity : ds[first - 1];
+      const after = i === ds.length - 1 ? Infinity : ds[i + 1];
+      if (ds[first] <= before && ds[first] <= after) {
+        rawMinima.push(first);
+      }
+    }
+    if (!rawMinima.length)
+      return [];
+    const clustered = [rawMinima[0]];
+    for (let k = 1;k < rawMinima.length; k++) {
+      const prevIdx = clustered[clustered.length - 1];
+      const currIdx = rawMinima[k];
+      let maxBetween = 0;
+      for (let j = prevIdx;j <= currIdx; j++) {
+        if (ds[j] > maxBetween)
+          maxBetween = ds[j];
+      }
+      if (maxBetween <= Math.max(ds[prevIdx], ds[currIdx]) + separationKm) {
+        if (ds[currIdx] < ds[prevIdx])
+          clustered[clustered.length - 1] = currIdx;
+      } else {
+        clustered.push(currIdx);
+      }
+    }
+    const filtered = allowEndpoints ? clustered : clustered.filter((idx) => idx > 0 && idx < samples.length - 1);
+    return filtered.map((idx) => {
+      const s = samples[idx];
+      return {
+        sampleIndex: idx,
+        position: { recordingId: s.recordingId, segment: s.segment, point: s.point },
+        trackKm: s.km,
+        distanceKm: ds[idx]
+      };
+    });
+  }
+  function normalizeText(value) {
+    return value.trim().toLowerCase().replace(/\s+/g, " ");
+  }
+  function isOffline() {
+    try {
+      return typeof navigator !== "undefined" && navigator.onLine === false;
+    } catch {
+      return false;
+    }
+  }
+  async function fetchJson(url, init, fetchImpl, label) {
+    if (isOffline()) {
+      throw new Error("You appear to be offline. You can still split days manually on the map above.");
+    }
+    let response;
+    try {
+      response = await fetchImpl(url, init);
+    } catch {
+      throw new Error(`Could not reach the ${label} service. Check your connection or split days manually.`);
+    }
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(`${label} rejected the API key (HTTP ${response.status}). Check your key in Settings.`);
+      }
+      if (response.status === 429) {
+        throw new Error(`${label} rate limit reached (HTTP 429). Wait a moment and try again.`);
+      }
+      throw new Error(`${label} request failed (HTTP ${response.status}).`);
+    }
+    try {
+      return await response.json();
+    } catch {
+      throw new Error(`${label} returned invalid JSON.`);
+    }
+  }
+  async function geocodePlace(query, project, bounds, samples, options) {
+    const trimmed = query.trim();
+    if (!trimmed)
+      return null;
+    const normalized = normalizeText(trimmed);
+    const existing = project.places.find((p) => normalizeText(p.name) === normalized && validCoordinates(p.lat, p.lon));
+    if (existing) {
+      return {
+        query: trimmed,
+        name: existing.name,
+        lat: existing.lat,
+        lon: existing.lon,
+        source: "project",
+        existingPlaceId: existing.id
+      };
+    }
+    const fetchImpl = options?.fetchImpl ?? globalThis.fetch;
+    const box = paddedBounds(bounds);
+    const googleKey = options?.googlePlacesKey?.trim() || "";
+    if (googleKey) {
+      try {
+        const data = await fetchJson("https://places.googleapis.com/v1/places:searchText", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": googleKey,
+            "X-Goog-FieldMask": "places.displayName,places.location"
+          },
+          body: JSON.stringify({
+            textQuery: trimmed,
+            maxResultCount: 5,
+            locationBias: {
+              rectangle: {
+                low: { latitude: box.south, longitude: box.west },
+                high: { latitude: box.north, longitude: box.east }
+              }
+            }
+          })
+        }, fetchImpl, "Google Places");
+        const candidates = (data.places ?? []).map((p) => ({
+          name: p.displayName?.text?.trim() || trimmed,
+          lat: Number(p.location?.latitude),
+          lon: Number(p.location?.longitude)
+        })).filter((c) => validCoordinates(c.lat, c.lon));
+        if (candidates.length) {
+          candidates.sort((a, b) => minDistanceToSamples(a, samples) - minDistanceToSamples(b, samples));
+          const best = candidates[0];
+          return { query: trimmed, name: best.name, lat: best.lat, lon: best.lon, source: "google" };
+        }
+      } catch {}
+    }
+    const centerLat = ((box.south + box.north) / 2).toFixed(5);
+    const centerLon = ((box.west + box.east) / 2).toFixed(5);
+    const bboxParam = [box.west, box.south, box.east, box.north].map((n) => n.toFixed(5)).join(",");
+    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&limit=5&bbox=${encodeURIComponent(bboxParam)}&lat=${centerLat}&lon=${centerLon}`;
+    const photonData = await fetchJson(photonUrl, undefined, fetchImpl, "geocoding");
+    const features = (photonData.features ?? []).map((f) => {
+      const coords = f.geometry?.coordinates;
+      const lon = Number(coords?.[0]);
+      const lat = Number(coords?.[1]);
+      const name = f.properties?.name || f.properties?.city || f.properties?.town || f.properties?.village || trimmed;
+      return { name: String(name).trim() || trimmed, lat, lon };
+    }).filter((c) => validCoordinates(c.lat, c.lon));
+    if (!features.length)
+      return null;
+    features.sort((a, b) => minDistanceToSamples(a, samples) - minDistanceToSamples(b, samples));
+    const best = features[0];
+    return { query: trimmed, name: best.name, lat: best.lat, lon: best.lon, source: "photon" };
+  }
+  var SYSTEM_PROMPT = [
+    "You extract structured multi-day itinerary splits from a rider's natural-language trip description.",
+    "Return ONLY a valid JSON object matching this exact schema:",
+    '{"days":[{"dayNumber":1,"kind":"ride"|"rest","name":"optional short label","endPlace":"town/stop name where this riding day finished","overnightPlace":"town/stop name where the rider stayed overnight","passHint":"first"|"second"|"last"|1|2}]}',
+    "Rules:",
+    "- Do NOT include latitude, longitude, or numeric coordinates; place names are geocoded separately.",
+    '- Use kind="rest" for rest days or zero-riding days, and kind="ride" for travel/riding days.',
+    '- If a riding day finishes in a town (e.g. "Day 1 finished in Pai"), set endPlace to "Pai" and overnightPlace to "Pai" unless the user specified a different overnight stop.',
+    '- If a rest day is in a town (e.g. "Day 2 was a rest day in Pai"), set kind="rest", name="Pai", and overnightPlace="Pai". Omit endPlace on rest days.',
+    "- Only set passHint if the user explicitly mentions visiting a place on the first/second/return/last pass.",
+    "- Keep days in chronological order."
+  ].join(`
+`);
+  function stripJsonFence(text) {
+    const trimmed = text.trim();
+    const fenced = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(trimmed);
+    return fenced ? fenced[1].trim() : trimmed;
+  }
+  function normalizePassHint(value) {
+    if (value === "first" || value === "second" || value === "last")
+      return value;
+    if (typeof value === "number" && Number.isInteger(value) && value >= 1)
+      return value;
+    return;
+  }
+  function sanitizeParsedDays(raw) {
+    const obj = raw;
+    if (!obj || typeof obj !== "object" || !Array.isArray(obj.days) || !obj.days.length) {
+      throw new Error("AI response did not contain a valid list of days. Try rephrasing your itinerary.");
+    }
+    const result = [];
+    for (const item of obj.days) {
+      if (!item || typeof item !== "object")
+        continue;
+      const rec = item;
+      const rawKind = String(rec.kind ?? "").trim().toLowerCase();
+      const kind = rawKind === "rest" || rawKind === "rest_day" || rawKind === "rest day" ? "rest" : "ride";
+      const spec = { kind };
+      if (typeof rec.dayNumber === "number" && Number.isInteger(rec.dayNumber) && rec.dayNumber > 0) {
+        spec.dayNumber = rec.dayNumber;
+      }
+      if (typeof rec.name === "string" && rec.name.trim())
+        spec.name = rec.name.trim().slice(0, 80);
+      if (kind === "ride" && typeof rec.endPlace === "string" && rec.endPlace.trim()) {
+        spec.endPlace = rec.endPlace.trim().slice(0, 120);
+      }
+      if (typeof rec.overnightPlace === "string" && rec.overnightPlace.trim()) {
+        spec.overnightPlace = rec.overnightPlace.trim().slice(0, 120);
+      }
+      const hint = normalizePassHint(rec.passHint);
+      if (hint !== undefined)
+        spec.passHint = hint;
+      result.push(spec);
+    }
+    if (!result.length) {
+      throw new Error("AI could not identify any days from that description.");
+    }
+    return result;
+  }
+  function resolveAiEndpoint(config) {
+    const custom = validateEndpointUrl(config.endpoint);
+    const model = config.model.trim() || DEFAULT_MODELS[config.provider];
+    const url = custom || DEFAULT_ENDPOINTS[config.provider].replace("{model}", encodeURIComponent(model));
+    const parsed = new URL(url);
+    const isLocal = parsed.protocol === "http:" && (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1");
+    return { url, isLocal };
+  }
+  async function parseNaturalItinerary(prompt, project, config, options) {
+    const cleanPrompt = prompt.trim();
+    if (!cleanPrompt)
+      throw new Error('Describe your days first (for example: "Day 1 finished in Pai, Day 2 rest in Pai").');
+    const { url, isLocal } = resolveAiEndpoint(config);
+    const apiKey = config.apiKey.trim();
+    if (!apiKey && !isLocal) {
+      throw new Error("Add an AI API key in Settings (stored only in this browser) to ask AI.");
+    }
+    const { totalKm, bounds } = collectRouteSamples(project);
+    const waypointNames = project.places.slice(0, 20).map((p) => p.name).filter(Boolean);
+    const contextParts = [
+      `Recorded route distance: ${totalKm.toFixed(1)} km across ${project.recordings.filter((r) => r.included).length} GPX file(s).`
+    ];
+    if (bounds) {
+      contextParts.push(`Approximate region: lat ${bounds.south.toFixed(1)}..${bounds.north.toFixed(1)}, lon ${bounds.west.toFixed(1)}..${bounds.east.toFixed(1)}.`);
+    }
+    if (waypointNames.length) {
+      contextParts.push(`Existing waypoints: ${waypointNames.join(", ")}.`);
+    }
+    const userMessage = `${contextParts.join(" ")}
+
+Rider itinerary:
+${cleanPrompt}`;
+    const fetchImpl = options?.fetchImpl ?? globalThis.fetch;
+    const model = config.model.trim() || DEFAULT_MODELS[config.provider];
+    let rawText = "";
+    if (config.provider === "gemini") {
+      const headers = { "Content-Type": "application/json" };
+      if (apiKey)
+        headers["x-goog-api-key"] = apiKey;
+      const data = await fetchJson(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: [{ role: "user", parts: [{ text: userMessage }] }],
+          generationConfig: {
+            temperature: 0,
+            responseMimeType: "application/json"
+          }
+        })
+      }, fetchImpl, "Gemini AI");
+      rawText = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+    } else {
+      const headers = { "Content-Type": "application/json" };
+      if (apiKey)
+        headers.Authorization = `Bearer ${apiKey}`;
+      const data = await fetchJson(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model,
+          temperature: 0,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userMessage }
+          ]
+        })
+      }, fetchImpl, "AI");
+      rawText = data.choices?.[0]?.message?.content ?? "";
+    }
+    if (!rawText.trim()) {
+      throw new Error("AI returned an empty response. Try again or split days manually.");
+    }
+    let parsedJson;
+    try {
+      parsedJson = JSON.parse(stripJsonFence(rawText));
+    } catch {
+      throw new Error("AI returned unreadable output instead of JSON. Try rephrasing your itinerary.");
+    }
+    return sanitizeParsedDays(parsedJson);
+  }
+  function chooseDefaultPassIndex(candidates, prevSplitIndex, hint) {
+    if (!candidates.length)
+      return 0;
+    if (hint === "last")
+      return candidates.length - 1;
+    if (hint === "second" && candidates.length >= 2)
+      return 1;
+    if (hint === "first")
+      return 0;
+    if (typeof hint === "number" && hint >= 1 && hint <= candidates.length)
+      return hint - 1;
+    const nextValid = candidates.findIndex((c) => c.sampleIndex > prevSplitIndex);
+    return nextValid >= 0 ? nextValid : 0;
+  }
+  function recomputePlan(input) {
+    const days = input.days.map((d) => ({
+      ...d,
+      split: d.split ? { ...d.split, candidates: d.split.candidates.map((c) => ({ ...c, position: { ...c.position } })) } : undefined,
+      overnight: d.overnight ? { ...d.overnight } : undefined
+    }));
+    const errors = [];
+    const warnings = [];
+    let prevSplitIndex = 0;
+    let prevKm = 0;
+    days.forEach((day, idx) => {
+      day.dayIndex = idx + 1;
+      if (day.kind === "rest") {
+        day.km = 0;
+        day.startSampleIndex = undefined;
+        day.endSampleIndex = undefined;
+        if (day.overnight?.error)
+          warnings.push(`Day ${day.dayIndex}: ${day.overnight.error}`);
+        return;
+      }
+      const split = day.split;
+      if (split) {
+        if (split.error) {
+          errors.push(`Day ${day.dayIndex}: ${split.error}`);
+          day.km = 0;
+          return;
+        }
+        if (split.isRouteEnd) {
+          day.startSampleIndex = prevSplitIndex;
+          day.endSampleIndex = Math.max(0, input.totalSamples - 1);
+          day.km = Math.max(0, input.totalKm - prevKm);
+          prevSplitIndex = day.endSampleIndex;
+          prevKm = input.totalKm;
+          return;
+        }
+        const chosen = split.candidates[split.selectedPassIndex];
+        if (!chosen) {
+          const msg = `Could not match "${split.query}" to a point on the GPX route.`;
+          split.error = msg;
+          errors.push(`Day ${day.dayIndex}: ${msg}`);
+          day.km = 0;
+          return;
+        }
+        if (chosen.sampleIndex <= prevSplitIndex) {
+          errors.push(`Day ${day.dayIndex} ("${split.resolved?.name || split.query}" at ${chosen.trackKm.toFixed(1)} km) is earlier than or equal to the previous split. Pick a later pass or revise the order.`);
+        }
+        if (chosen.sampleIndex >= input.totalSamples - 1) {
+          errors.push(`Day ${day.dayIndex} ("${split.resolved?.name || split.query}") lands on the final point of the route and cannot be followed by another riding day.`);
+        }
+        if (split.ambiguous) {
+          warnings.push(`"${split.resolved?.name || split.query}" is passed ${split.candidates.length} times — confirm which pass ends Day ${day.dayIndex}.`);
+        }
+        day.startSampleIndex = prevSplitIndex;
+        day.endSampleIndex = chosen.sampleIndex;
+        day.km = Math.max(0, chosen.trackKm - prevKm);
+        prevSplitIndex = chosen.sampleIndex;
+        prevKm = chosen.trackKm;
+      } else {
+        day.startSampleIndex = prevSplitIndex;
+        day.endSampleIndex = Math.max(0, input.totalSamples - 1);
+        day.km = Math.max(0, input.totalKm - prevKm);
+        prevSplitIndex = day.endSampleIndex;
+        prevKm = input.totalKm;
+      }
+      if (day.overnight?.error && day.overnight.query !== day.split?.query) {
+        warnings.push(`Day ${day.dayIndex}: ${day.overnight.error}`);
+      }
+    });
+    const canApply = errors.length === 0 && days.length > 0 && days.some((d) => d.kind === "ride");
+    return {
+      ...input,
+      days,
+      errors,
+      warnings,
+      canApply
+    };
+  }
+  async function buildAiSplitPlan(prompt, project, config, options) {
+    const { samples, totalKm, bounds } = collectRouteSamples(project);
+    if (samples.length < 3 || !bounds) {
+      throw new Error("Include a GPX track with at least 3 points before asking AI to split days.");
+    }
+    const parsedDays = await parseNaturalItinerary(prompt, project, config, { fetchImpl: options?.fetchImpl });
+    const geoCache = new Map;
+    async function resolveName(name) {
+      const key = normalizeText(name);
+      if (!geoCache.has(key)) {
+        const resolved = await geocodePlace(name, project, bounds, samples, {
+          googlePlacesKey: config.googlePlacesKey,
+          fetchImpl: options?.fetchImpl
+        });
+        geoCache.set(key, resolved);
+      }
+      return geoCache.get(key) ?? null;
+    }
+    const maxSnapKm = options?.maxSnapKm ?? 25;
+    const lastRideSpecIdx = parsedDays.reduce((acc, d, i) => d.kind === "ride" ? i : acc, -1);
+    const plannedDays = [];
+    let prevSplitIndex = 0;
+    let hasUnallocatedTail = true;
+    for (let i = 0;i < parsedDays.length; i++) {
+      const spec = parsedDays[i];
+      const id = crypto.randomUUID();
+      if (spec.kind === "rest") {
+        let overnight;
+        const overnightQuery = spec.overnightPlace || spec.name;
+        if (overnightQuery) {
+          const resolved = await resolveName(overnightQuery);
+          overnight = resolved ? { query: overnightQuery, resolved } : { query: overnightQuery, resolved: null, error: `Could not locate "${overnightQuery}" near this route.` };
+        }
+        plannedDays.push({
+          id,
+          dayIndex: plannedDays.length + 1,
+          kind: "rest",
+          name: spec.name || overnight?.resolved?.name || "Rest day",
+          inferredRemainder: false,
+          km: 0,
+          overnight
+        });
+        continue;
+      }
+      let split;
+      let overnight;
+      if (spec.endPlace) {
+        const resolved = await resolveName(spec.endPlace);
+        if (!resolved) {
+          split = {
+            query: spec.endPlace,
+            resolved: null,
+            candidates: [],
+            selectedPassIndex: 0,
+            ambiguous: false,
+            isRouteEnd: false,
+            error: `Could not find "${spec.endPlace}" near this GPX route.`
+          };
+        } else {
+          const interiorPasses = findTrackPasses(samples, resolved, { maxSnapKm, allowEndpoints: false });
+          const allPasses = findTrackPasses(samples, resolved, { maxSnapKm, allowEndpoints: true });
+          const isLastSpecifiedRide = i === lastRideSpecIdx;
+          const lastPass = allPasses[allPasses.length - 1];
+          const endsAtRouteFinish = Boolean(isLastSpecifiedRide && lastPass && lastPass.sampleIndex > prevSplitIndex && (lastPass.sampleIndex === samples.length - 1 || totalKm - lastPass.trackKm <= Math.max(0.5, totalKm * 0.02)) && interiorPasses.length <= 1);
+          if (endsAtRouteFinish) {
+            split = {
+              query: spec.endPlace,
+              resolved,
+              candidates: [lastPass],
+              selectedPassIndex: 0,
+              ambiguous: false,
+              isRouteEnd: true
+            };
+            hasUnallocatedTail = false;
+          } else if (!interiorPasses.length) {
+            const nearEnd = Boolean(isLastSpecifiedRide && lastPass && lastPass.sampleIndex === samples.length - 1);
+            if (nearEnd) {
+              split = {
+                query: spec.endPlace,
+                resolved,
+                candidates: [lastPass],
+                selectedPassIndex: 0,
+                ambiguous: false,
+                isRouteEnd: true
+              };
+              hasUnallocatedTail = false;
+            } else {
+              split = {
+                query: spec.endPlace,
+                resolved,
+                candidates: [],
+                selectedPassIndex: 0,
+                ambiguous: false,
+                isRouteEnd: false,
+                error: `"${resolved.name}" is too far from the recorded GPX route (over ${maxSnapKm} km away) or at the start point.`
+              };
+            }
+          } else {
+            const selectedPassIndex = chooseDefaultPassIndex(interiorPasses, prevSplitIndex, spec.passHint);
+            split = {
+              query: spec.endPlace,
+              resolved,
+              candidates: interiorPasses,
+              selectedPassIndex,
+              ambiguous: interiorPasses.length > 1,
+              isRouteEnd: false
+            };
+            prevSplitIndex = interiorPasses[selectedPassIndex].sampleIndex;
+            hasUnallocatedTail = true;
+          }
+        }
+      } else if (i === lastRideSpecIdx) {
+        hasUnallocatedTail = false;
+      }
+      const overnightQuery = spec.overnightPlace || spec.endPlace;
+      if (overnightQuery) {
+        const resolved = split?.resolved && normalizeText(overnightQuery) === normalizeText(split.query) ? split.resolved : await resolveName(overnightQuery);
+        overnight = resolved ? { query: overnightQuery, resolved } : { query: overnightQuery, resolved: null, error: `Could not locate "${overnightQuery}" near this route.` };
+      }
+      plannedDays.push({
+        id,
+        dayIndex: plannedDays.length + 1,
+        kind: "ride",
+        name: spec.name || "",
+        inferredRemainder: false,
+        km: 0,
+        split,
+        overnight
+      });
+    }
+    if (hasUnallocatedTail) {
+      plannedDays.push({
+        id: crypto.randomUUID(),
+        dayIndex: plannedDays.length + 1,
+        kind: "ride",
+        name: "",
+        inferredRemainder: true,
+        km: 0
+      });
+    }
+    return recomputePlan({
+      prompt: prompt.trim(),
+      totalKm,
+      totalSamples: samples.length,
+      days: plannedDays,
+      errors: [],
+      warnings: [],
+      canApply: false
+    });
+  }
+  function selectPlanPass(plan, dayId, candidateIndex) {
+    const nextDays = plan.days.map((d) => {
+      if (d.id !== dayId || !d.split)
+        return d;
+      const bounded = Math.max(0, Math.min(d.split.candidates.length - 1, candidateIndex));
+      return { ...d, split: { ...d.split, selectedPassIndex: bounded } };
+    });
+    return recomputePlan({ ...plan, days: nextDays });
+  }
+  function findOrCreatePlace(project, geo) {
+    if (geo.existingPlaceId) {
+      const byId = project.places.find((p) => p.id === geo.existingPlaceId);
+      if (byId) {
+        byId.visible = true;
+        return byId;
+      }
+    }
+    const targetName = normalizeText(geo.name);
+    const existing = project.places.find((p) => normalizeText(p.name) === targetName && distance({ lat: p.lat, lon: p.lon, ele: null }, { lat: geo.lat, lon: geo.lon, ele: null }) < 2);
+    if (existing) {
+      existing.visible = true;
+      return existing;
+    }
+    return addPlace(project, geo.name, { lat: geo.lat, lon: geo.lon }, true, "Place");
+  }
+  function applyAiSplitPlan(project, rawPlan) {
+    const plan = recomputePlan(rawPlan);
+    if (!plan.canApply) {
+      throw new Error(plan.errors[0] || "Resolve plan issues before applying.");
+    }
+    const includedIds = new Set(project.recordings.filter((r) => r.included).map((r) => r.id));
+    const allRanges = combinedRanges(project.days.filter((d) => !d.rest)).filter((r) => includedIds.has(r.recordingId));
+    if (!allRanges.length) {
+      throw new Error("No included GPX track points are available to split.");
+    }
+    const oldDayIds = new Set(project.days.map((d) => d.id));
+    const staged = [];
+    let remaining = allRanges;
+    const colorFor = (idx) => DAY_PALETTE[idx % DAY_PALETTE.length];
+    for (const pd of plan.days) {
+      const color = colorFor(staged.length);
+      let day;
+      if (pd.kind === "rest") {
+        day = {
+          id: crypto.randomUUID(),
+          name: pd.name.trim() || "Rest day",
+          color,
+          rest: true,
+          ranges: []
+        };
+      } else if (pd.split && !pd.split.isRouteEnd) {
+        const chosen = pd.split.candidates[pd.split.selectedPassIndex];
+        const [before, after] = splitRanges(remaining, chosen.position);
+        day = {
+          id: crypto.randomUUID(),
+          name: pd.name.trim(),
+          color,
+          rest: false,
+          ranges: before
+        };
+        remaining = after;
+      } else {
+        if (!remaining.length) {
+          throw new Error(`No route track remained for Day ${pd.dayIndex}.`);
+        }
+        day = {
+          id: crypto.randomUUID(),
+          name: pd.name.trim(),
+          color,
+          rest: false,
+          ranges: remaining
+        };
+        remaining = [];
+      }
+      staged.push({ day, overnight: pd.overnight?.resolved ?? undefined });
+    }
+    const newDays = [];
+    const newVisits = [];
+    for (const { day, overnight } of staged) {
+      newDays.push(day);
+      if (overnight) {
+        const place = findOrCreatePlace(project, overnight);
+        const endRange = day.rest ? undefined : day.ranges[day.ranges.length - 1];
+        const position = endRange ? { recordingId: endRange.recordingId, segment: endRange.segment, point: endRange.end } : undefined;
+        newVisits.push({
+          id: crypto.randomUUID(),
+          placeId: place.id,
+          dayId: day.id,
+          overnight: true,
+          position
+        });
+      }
+    }
+    project.days = newDays;
+    project.manualOrder = true;
+    project.visits = project.visits.filter((v) => !oldDayIds.has(v.dayId)).concat(newVisits);
+    let hasTripHero = project.photos.some((p) => p.dayId === "" && p.hero);
+    for (const photo of project.photos) {
+      if (!photo.dayId || !oldDayIds.has(photo.dayId))
+        continue;
+      photo.dayId = "";
+      if (photo.hero && hasTripHero)
+        photo.hero = false;
+      else if (photo.hero)
+        hasTripHero = true;
+    }
+    const out = project.output;
+    const removedKeys = new Set(Array.from(oldDayIds, (id) => "day:" + id));
+    out.groups = out.groups.filter((group) => {
+      group.dayIds = group.dayIds.filter((id) => !oldDayIds.has(id));
+      if (group.dayIds.length)
+        return true;
+      removedKeys.add("group:" + group.id);
+      return false;
+    });
+    if (removedKeys.has(out.active))
+      out.active = "trip";
+    out.selected = out.selected.filter((key) => !removedKeys.has(key));
+    for (const settings of [out.labels, out.placeVisibility, out.placeText]) {
+      if (!settings)
+        continue;
+      for (const key of removedKeys)
+        delete settings[key];
+    }
+    return project;
+  }
+
+  // src/places-search.ts
+  var GOOGLE_PLACES_KEY_STORAGE = "map-and-posters:google-places-key";
+  var PHOTON_ENDPOINT = "https://photon.komoot.io/api/";
+  var GOOGLE_AUTOCOMPLETE_ENDPOINT = "https://places.googleapis.com/v1/places:autocomplete";
+  var GOOGLE_DETAILS_BASE = "https://places.googleapis.com/v1/places/";
+  var OFFLINE_ERROR = "Place search unavailable offline. Paste coordinates or a map link instead.";
+  function roundCoord(value) {
+    return Number(value.toFixed(6));
+  }
+  function isAbortError(error, signal) {
+    return Boolean(signal?.aborted) || error instanceof Error && error.name === "AbortError";
+  }
+  function getGooglePlacesKey(storage) {
+    try {
+      const store = storage === undefined ? globalThis.localStorage : storage;
+      return store?.getItem(GOOGLE_PLACES_KEY_STORAGE)?.trim() || "";
+    } catch {
+      return "";
+    }
+  }
+  function setGooglePlacesKey(key, storage) {
+    const trimmed = key.trim();
+    try {
+      const store = storage === undefined ? globalThis.localStorage : storage;
+      if (!store)
+        return trimmed;
+      if (trimmed)
+        store.setItem(GOOGLE_PLACES_KEY_STORAGE, trimmed);
+      else
+        store.removeItem(GOOGLE_PLACES_KEY_STORAGE);
+    } catch {}
+    return trimmed;
+  }
+  function trackBounds(tracks, minPadDeg = 0.25) {
+    let south = Infinity;
+    let north = -Infinity;
+    let west = Infinity;
+    let east = -Infinity;
+    let count = 0;
+    for (const track of tracks) {
+      for (const segment of track) {
+        for (const point of segment) {
+          if (!validCoordinates(point.lat, point.lon))
+            continue;
+          south = Math.min(south, point.lat);
+          north = Math.max(north, point.lat);
+          west = Math.min(west, point.lon);
+          east = Math.max(east, point.lon);
+          count++;
+        }
+      }
+    }
+    if (!count || east - west > 180)
+      return null;
+    const padLat = Math.max(minPadDeg, (north - south) * 0.25);
+    const padLon = Math.max(minPadDeg, (east - west) * 0.25);
+    return {
+      south: roundCoord(Math.max(-90, south - padLat)),
+      west: roundCoord(Math.max(-180, west - padLon)),
+      north: roundCoord(Math.min(90, north + padLat)),
+      east: roundCoord(Math.min(180, east + padLon))
+    };
+  }
+  function parsePhotonFeatures(data, limit) {
+    const features = Array.isArray(data?.features) ? data.features : [];
+    const suggestions = [];
+    const seen = new Set;
+    for (let i = 0;i < features.length && suggestions.length < limit; i++) {
+      const coords = features[i]?.geometry?.coordinates;
+      if (!Array.isArray(coords) || coords.length < 2)
+        continue;
+      const lon = Number(coords[0]);
+      const lat = Number(coords[1]);
+      if (!validCoordinates(lat, lon))
+        continue;
+      const props = features[i]?.properties || {};
+      const str = (key) => typeof props[key] === "string" ? props[key].trim() : "";
+      const street = str("street");
+      const housenumber = str("housenumber");
+      const streetLine = street ? housenumber ? `${street} ${housenumber}` : street : "";
+      const name = str("name") || str("city") || streetLine || str("county") || str("state") || str("country");
+      if (!name)
+        continue;
+      const parts = [];
+      const lowerSeen = new Set([name.toLowerCase()]);
+      for (const part of [streetLine, str("city"), str("county"), str("state"), str("country")]) {
+        if (!part)
+          continue;
+        const key = part.toLowerCase();
+        if (lowerSeen.has(key))
+          continue;
+        lowerSeen.add(key);
+        parts.push(part);
+      }
+      const subtitle = parts.join(", ");
+      const dedupeKey = `${name.toLowerCase()}|${lat.toFixed(4)},${lon.toFixed(4)}`;
+      if (seen.has(dedupeKey))
+        continue;
+      seen.add(dedupeKey);
+      const osmType = str("osm_type") || "p";
+      const osmId = props.osm_id !== undefined ? String(props.osm_id) : String(i);
+      suggestions.push({
+        id: `photon:${osmType}:${osmId}:${lat.toFixed(5)},${lon.toFixed(5)}`,
+        name,
+        subtitle,
+        coords: { lat, lon },
+        provider: "photon"
+      });
+    }
+    return suggestions;
+  }
+  async function queryPhoton(query, limit, bounds, withBbox, fetchFn, signal) {
+    const url = new URL(PHOTON_ENDPOINT);
+    url.searchParams.set("q", query);
+    url.searchParams.set("limit", String(limit));
+    if (bounds) {
+      url.searchParams.set("lat", String(roundCoord((bounds.south + bounds.north) / 2)));
+      url.searchParams.set("lon", String(roundCoord((bounds.west + bounds.east) / 2)));
+      if (withBbox) {
+        url.searchParams.set("bbox", [bounds.west, bounds.south, bounds.east, bounds.north].map(roundCoord).join(","));
+      }
+    }
+    const response = await fetchFn(url.toString(), { signal, headers: { Accept: "application/json" } });
+    if (!response.ok) {
+      return {
+        suggestions: [],
+        error: response.status === 429 ? "Place search rate limit reached. Try again or enter coordinates manually." : "Place search returned an error. Paste coordinates or a map link instead."
+      };
+    }
+    const data = await response.json();
+    return { suggestions: parsePhotonFeatures(data, limit) };
+  }
+  function googleHttpError(status) {
+    if (status === 401 || status === 403) {
+      return "Google Places key was rejected. Check your key or clear it to use OpenStreetMap search.";
+    }
+    if (status === 429) {
+      return "Google Places rate limit reached. Try again or enter coordinates manually.";
+    }
+    return "Place search returned an error. Paste coordinates or a map link instead.";
+  }
+  async function searchPlaces(query, options = {}) {
+    const trimmed = query.trim();
+    const key = options.apiKey !== undefined ? options.apiKey.trim() : getGooglePlacesKey();
+    const provider = key ? "google" : "photon";
+    if (options.signal?.aborted)
+      return { provider, suggestions: [], aborted: true };
+    if (trimmed.length < 2)
+      return { provider, suggestions: [] };
+    const fetchFn = options.fetchImpl ?? globalThis.fetch;
+    if (typeof fetchFn !== "function") {
+      return { provider, suggestions: [], error: OFFLINE_ERROR };
+    }
+    const limit = Math.max(1, Math.min(10, options.limit ?? 5));
+    try {
+      if (provider === "google") {
+        const body = { input: trimmed };
+        if (options.sessionToken)
+          body.sessionToken = options.sessionToken;
+        if (options.bounds) {
+          body.locationBias = {
+            rectangle: {
+              low: { latitude: options.bounds.south, longitude: options.bounds.west },
+              high: { latitude: options.bounds.north, longitude: options.bounds.east }
+            }
+          };
+        }
+        const response = await fetchFn(GOOGLE_AUTOCOMPLETE_ENDPOINT, {
+          method: "POST",
+          signal: options.signal,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": key,
+            "X-Goog-FieldMask": "suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat,suggestions.placePrediction.text"
+          },
+          body: JSON.stringify(body)
+        });
+        if (!response.ok) {
+          return { provider, suggestions: [], error: googleHttpError(response.status) };
+        }
+        const data = await response.json();
+        const raw = Array.isArray(data?.suggestions) ? data.suggestions : [];
+        const suggestions = [];
+        for (const item of raw) {
+          if (suggestions.length >= limit)
+            break;
+          const pred = item?.placePrediction;
+          const placeId = typeof pred?.placeId === "string" ? pred.placeId.trim() : "";
+          if (!placeId)
+            continue;
+          const mainText = pred?.structuredFormat?.mainText?.text?.trim() || "";
+          const secondaryText = pred?.structuredFormat?.secondaryText?.text?.trim() || "";
+          const fullText = pred?.text?.text?.trim() || "";
+          const name = mainText || fullText;
+          if (!name)
+            continue;
+          suggestions.push({
+            id: `google:${placeId}`,
+            name,
+            subtitle: secondaryText,
+            provider: "google",
+            placeId
+          });
+        }
+        return { provider, suggestions };
+      }
+      const bounded = await queryPhoton(trimmed, limit, options.bounds, Boolean(options.bounds), fetchFn, options.signal);
+      if (bounded.error || bounded.suggestions.length > 0 || !options.bounds) {
+        return { provider, ...bounded };
+      }
+      if (options.signal?.aborted)
+        return { provider, suggestions: [], aborted: true };
+      const broad = await queryPhoton(trimmed, limit, options.bounds, false, fetchFn, options.signal);
+      return { provider, ...broad };
+    } catch (error) {
+      if (isAbortError(error, options.signal))
+        return { provider, suggestions: [], aborted: true };
+      return { provider, suggestions: [], error: OFFLINE_ERROR };
+    }
+  }
+  async function resolvePlace(suggestion, options = {}) {
+    if (suggestion.coords && validCoordinates(suggestion.coords.lat, suggestion.coords.lon)) {
+      return {
+        place: {
+          name: suggestion.name,
+          subtitle: suggestion.subtitle,
+          coords: suggestion.coords,
+          provider: suggestion.provider
+        }
+      };
+    }
+    if (options.signal?.aborted)
+      return { aborted: true };
+    if (suggestion.provider !== "google" || !suggestion.placeId) {
+      return { error: "Could not determine coordinates for this place." };
+    }
+    const key = options.apiKey !== undefined ? options.apiKey.trim() : getGooglePlacesKey();
+    if (!key) {
+      return { error: "Google Places key is missing. Paste coordinates or a map link instead." };
+    }
+    const fetchFn = options.fetchImpl ?? globalThis.fetch;
+    if (typeof fetchFn !== "function")
+      return { error: OFFLINE_ERROR };
+    try {
+      const url = new URL(GOOGLE_DETAILS_BASE + encodeURIComponent(suggestion.placeId));
+      if (options.sessionToken)
+        url.searchParams.set("sessionToken", options.sessionToken);
+      const response = await fetchFn(url.toString(), {
+        method: "GET",
+        signal: options.signal,
+        headers: {
+          "X-Goog-Api-Key": key,
+          "X-Goog-FieldMask": "displayName,formattedAddress,location"
+        }
+      });
+      if (!response.ok)
+        return { error: googleHttpError(response.status) };
+      const data = await response.json();
+      const lat = Number(data?.location?.latitude);
+      const lon = Number(data?.location?.longitude);
+      if (!validCoordinates(lat, lon)) {
+        return { error: "Place details did not include valid coordinates. Paste coordinates manually." };
+      }
+      return {
+        place: {
+          name: suggestion.name || data?.displayName?.text?.trim() || "Unnamed place",
+          subtitle: suggestion.subtitle || data?.formattedAddress?.trim() || "",
+          coords: { lat, lon },
+          provider: "google"
+        }
+      };
+    } catch (error) {
+      if (isAbortError(error, options.signal))
+        return { aborted: true };
+      return { error: OFFLINE_ERROR };
+    }
+  }
+  function snapPlaceToRoute(samples, target, toleranceKm = 0.5) {
+    if (samples.length < 3 || !validCoordinates(target.lat, target.lon))
+      return [];
+    const goal = { lat: target.lat, lon: target.lon, ele: null };
+    const distances = new Array(samples.length).fill(Infinity);
+    let best = Infinity;
+    for (let i = 1;i < samples.length - 1; i++) {
+      const d = distance(goal, { lat: samples[i].lat, lon: samples[i].lon, ele: null });
+      distances[i] = d;
+      if (d < best)
+        best = d;
+    }
+    if (!Number.isFinite(best))
+      return [];
+    const threshold = best + toleranceKm;
+    const candidates = [];
+    for (let i = 1;i < samples.length - 1; i++) {
+      if (distances[i] > threshold)
+        continue;
+      const run = samples[i].run;
+      let bestIdx = i;
+      let j = i + 1;
+      while (j < samples.length - 1 && samples[j].run === run && distances[j] <= threshold) {
+        if (distances[j] < distances[bestIdx])
+          bestIdx = j;
+        j++;
+      }
+      candidates.push({
+        index: bestIdx,
+        km: samples[bestIdx].km,
+        distanceKm: distances[bestIdx]
+      });
+      i = j - 1;
+    }
+    return candidates;
+  }
+
   // src/wizard.ts
   var STEP_TITLES = [
     "Add your GPX",
@@ -2026,10 +3220,148 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
     let step = 1;
     let activeDayId = "";
     let showAddPlace = false;
+    let showStep2Search = false;
     let photoDayId = "";
     let expandedCropPhotoId = "";
     let statusText = "";
     let busy = false;
+    let searchCleanups = [];
+    let aiOpen = false;
+    let aiSettingsOpen = null;
+    let aiPrompt = "";
+    let aiBusy = false;
+    let aiError = "";
+    let aiPlan = null;
+    function cancelSearches() {
+      for (const stop of searchCleanups)
+        stop();
+      searchCleanups = [];
+    }
+    function wirePlaceAutocomplete(options) {
+      const { input, list, bounds, searchOnEnter, onSelect, onError, onEmpty, onClear } = options;
+      let timer;
+      let controller;
+      let sessionToken = crypto.randomUUID();
+      function clearList() {
+        list.replaceChildren();
+        list.hidden = true;
+      }
+      function stop() {
+        if (timer !== undefined) {
+          clearTimeout(timer);
+          timer = undefined;
+        }
+        if (controller) {
+          controller.abort();
+          controller = undefined;
+        }
+      }
+      searchCleanups.push(stop);
+      async function runSearch(raw) {
+        stop();
+        const q = raw.trim();
+        if (q.length < 2) {
+          clearList();
+          onClear?.();
+          return;
+        }
+        const current = new AbortController;
+        controller = current;
+        const outcome = await searchPlaces(q, {
+          bounds,
+          sessionToken,
+          signal: current.signal
+        });
+        if (outcome.aborted || controller !== current || !input.isConnected || !list.isConnected)
+          return;
+        if (outcome.error) {
+          clearList();
+          onError(outcome.error);
+          return;
+        }
+        if (!outcome.suggestions.length) {
+          clearList();
+          onEmpty?.();
+          return;
+        }
+        onClear?.();
+        list.replaceChildren(...outcome.suggestions.map((suggestion) => {
+          const item = el("li");
+          const pick = el("button", "", "wiz-suggestion");
+          pick.type = "button";
+          pick.append(el("strong", suggestion.name));
+          if (suggestion.subtitle)
+            pick.append(el("span", suggestion.subtitle));
+          pick.onclick = async () => {
+            pick.disabled = true;
+            const resolved = await resolvePlace(suggestion, { sessionToken, signal: current.signal });
+            if (resolved.aborted || !input.isConnected)
+              return;
+            if (resolved.error || !resolved.place) {
+              pick.disabled = false;
+              onError(resolved.error || "Could not load coordinates for this place.");
+              return;
+            }
+            sessionToken = crypto.randomUUID();
+            clearList();
+            onSelect(resolved.place);
+          };
+          item.append(pick);
+          return item;
+        }));
+        list.hidden = false;
+      }
+      input.addEventListener("input", () => {
+        if (timer !== undefined) {
+          clearTimeout(timer);
+          timer = undefined;
+        }
+        if (input.value.trim().length < 2) {
+          stop();
+          clearList();
+          onClear?.();
+          return;
+        }
+        timer = setTimeout(() => {
+          runSearch(input.value);
+        }, 180);
+      });
+      input.addEventListener("keydown", (e) => {
+        if (e.isComposing)
+          return;
+        if (e.key === "ArrowDown" && !list.hidden) {
+          e.preventDefault();
+          list.querySelector("button")?.focus();
+        } else if (e.key === "Escape" && !list.hidden) {
+          e.preventDefault();
+          e.stopPropagation();
+          clearList();
+        } else if (e.key === "Enter" && searchOnEnter) {
+          e.preventDefault();
+          runSearch(input.value);
+        }
+      });
+      list.addEventListener("keydown", (e) => {
+        const buttons = Array.from(list.querySelectorAll("button"));
+        const idx = buttons.indexOf(document.activeElement);
+        if (e.key === "ArrowDown" && buttons.length) {
+          e.preventDefault();
+          buttons[(idx + 1) % buttons.length].focus();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (idx <= 0)
+            input.focus();
+          else
+            buttons[idx - 1].focus();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          clearList();
+          input.focus();
+        }
+      });
+      return { clearList, stop };
+    }
     function isOpen() {
       return dialog.hasAttribute("open");
     }
@@ -2046,6 +3378,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
     function hide() {
       if (!isOpen())
         return;
+      cancelSearches();
       if (typeof dialog.close === "function")
         dialog.close("exit");
       else {
@@ -2054,6 +3387,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       }
     }
     dialog.addEventListener("close", () => {
+      cancelSearches();
       dialog.returnValue = "";
       hooks.onExit();
     });
@@ -2200,11 +3534,290 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       tools.append(addMore, restoreLabel(), btn("New trip", () => hooks.resetTrip(), "wiz-link wiz-danger"));
       content.append(tools);
     }
+    function renderAiSplitBox(project) {
+      if (collectRouteSamples(project).samples.length < 3)
+        return null;
+      const config = loadAiConfig();
+      const detailsEl = el("details", "", "wiz-ai");
+      detailsEl.open = aiOpen;
+      detailsEl.addEventListener("toggle", () => {
+        if (!detailsEl.isConnected)
+          return;
+        aiOpen = detailsEl.open;
+      });
+      const summary = el("summary", "Ask AI to split days", "wiz-ai-trigger");
+      detailsEl.append(summary);
+      const panel = el("div", "", "wiz-ai-panel");
+      const promptField = el("div", "", "wiz-ai-field");
+      const promptLabel = el("label", "Describe your days");
+      promptLabel.htmlFor = "wiz-ai-prompt";
+      const hint = el("p", "Stop names are geocoded onto your GPX track. Nothing changes until you click Apply plan.", "wiz-ai-hint");
+      hint.id = "wiz-ai-hint";
+      const promptInput = el("textarea", "", "wiz-input wiz-ai-prompt");
+      promptInput.id = "wiz-ai-prompt";
+      promptInput.rows = 2;
+      promptInput.placeholder = "e.g. Day 1 finished in Pai, Day 2 was a rest day in Pai";
+      promptInput.setAttribute("aria-describedby", "wiz-ai-hint");
+      promptInput.value = aiPrompt;
+      promptInput.disabled = aiBusy;
+      promptInput.oninput = () => {
+        aiPrompt = promptInput.value;
+      };
+      promptField.append(promptLabel, hint, promptInput);
+      panel.append(promptField);
+      const settingsEl = el("details", "", "wiz-ai-settings");
+      const needsSetup = !config.apiKey && !config.endpoint;
+      settingsEl.open = aiSettingsOpen ?? needsSetup;
+      settingsEl.addEventListener("toggle", () => {
+        if (!settingsEl.isConnected)
+          return;
+        aiSettingsOpen = settingsEl.open;
+      });
+      settingsEl.append(el("summary", "AI & geocoding settings"));
+      const grid = el("div", "", "wiz-ai-settings-grid");
+      const providerField = el("div", "", "wiz-ai-field");
+      const providerLabel = el("label", "Provider");
+      providerLabel.htmlFor = "wiz-ai-provider";
+      const providerSel = el("select", "", "wiz-select-sm");
+      providerSel.id = "wiz-ai-provider";
+      providerSel.disabled = aiBusy;
+      for (const [val, labelText] of [["openai", "OpenAI-compatible"], ["gemini", "Gemini"]]) {
+        const opt = el("option", labelText);
+        opt.value = val;
+        if (config.provider === val)
+          opt.selected = true;
+        providerSel.add(opt);
+      }
+      providerField.append(providerLabel, providerSel);
+      const modelField = el("div", "", "wiz-ai-field");
+      const modelLabel = el("label", "Model");
+      modelLabel.htmlFor = "wiz-ai-model";
+      const modelInput = el("input", "", "wiz-input");
+      modelInput.id = "wiz-ai-model";
+      modelInput.type = "text";
+      modelInput.value = config.model;
+      modelInput.disabled = aiBusy;
+      modelField.append(modelLabel, modelInput);
+      const keyField = el("div", "", "wiz-ai-field wiz-ai-span");
+      const keyLabel = el("label", "API key");
+      keyLabel.htmlFor = "wiz-ai-key";
+      const keyInput = el("input", "", "wiz-input");
+      keyInput.id = "wiz-ai-key";
+      keyInput.type = "password";
+      keyInput.autocomplete = "off";
+      keyInput.placeholder = "Stored only in this browser";
+      keyInput.value = config.apiKey;
+      keyInput.disabled = aiBusy;
+      keyField.append(keyLabel, keyInput);
+      const endpointField = el("div", "", "wiz-ai-field wiz-ai-span");
+      const endpointLabel = el("label", "Custom endpoint (optional)");
+      endpointLabel.htmlFor = "wiz-ai-endpoint";
+      const endpointInput = el("input", "", "wiz-input");
+      endpointInput.id = "wiz-ai-endpoint";
+      endpointInput.type = "url";
+      endpointInput.placeholder = "Blank for provider default, or https://… / http://localhost:…";
+      endpointInput.value = config.endpoint;
+      endpointInput.disabled = aiBusy;
+      endpointField.append(endpointLabel, endpointInput);
+      const placesField = el("div", "", "wiz-ai-field wiz-ai-span");
+      const placesLabel = el("label", "Google Places key (optional)");
+      placesLabel.htmlFor = "wiz-ai-places-key";
+      const placesInput = el("input", "", "wiz-input");
+      placesInput.id = "wiz-ai-places-key";
+      placesInput.type = "password";
+      placesInput.autocomplete = "off";
+      placesInput.placeholder = "Optional — uses free OSM Photon if blank";
+      placesInput.value = config.googlePlacesKey;
+      placesInput.disabled = aiBusy;
+      placesField.append(placesLabel, placesInput);
+      const persistConfig = () => {
+        const nextProvider = providerSel.value === "gemini" ? "gemini" : "openai";
+        return saveAiConfig({
+          provider: nextProvider,
+          model: modelInput.value,
+          apiKey: keyInput.value,
+          endpoint: endpointInput.value,
+          googlePlacesKey: placesInput.value
+        });
+      };
+      providerSel.onchange = () => {
+        const prevDefault = DEFAULT_MODELS[config.provider];
+        const nextProvider = providerSel.value === "gemini" ? "gemini" : "openai";
+        if (!modelInput.value.trim() || modelInput.value.trim() === prevDefault) {
+          modelInput.value = DEFAULT_MODELS[nextProvider];
+        }
+        try {
+          persistConfig();
+          aiError = "";
+        } catch (e) {
+          aiError = e.message;
+        }
+        render();
+      };
+      for (const inputEl of [modelInput, keyInput, endpointInput, placesInput]) {
+        inputEl.onchange = () => {
+          try {
+            persistConfig();
+            aiError = "";
+          } catch (e) {
+            aiError = e.message;
+            render();
+          }
+        };
+      }
+      grid.append(providerField, modelField, keyField, endpointField, placesField);
+      const settingsFoot = el("div", "", "wiz-ai-settings-foot");
+      settingsFoot.append(el("span", "Keys stay in localStorage and are never saved in trip backups.", "wiz-ai-hint"), btn("Clear keys", () => {
+        clearAiConfig();
+        aiError = "";
+        aiSettingsOpen = true;
+        render();
+      }, "wiz-link wiz-danger"));
+      settingsEl.append(grid, settingsFoot);
+      panel.append(settingsEl);
+      const actions = el("div", "", "wiz-ai-actions");
+      const suggestBtn = btn(aiBusy ? "Planning split…" : "Suggest split plan", async () => {
+        aiPrompt = promptInput.value;
+        let savedConfig;
+        try {
+          savedConfig = persistConfig();
+        } catch (e) {
+          aiError = e.message;
+          render();
+          return;
+        }
+        aiBusy = true;
+        aiError = "";
+        aiOpen = true;
+        render();
+        try {
+          const plan = await buildAiSplitPlan(aiPrompt, project, savedConfig);
+          aiPlan = plan;
+          aiSettingsOpen = false;
+        } catch (e) {
+          aiPlan = null;
+          aiError = e instanceof Error ? e.message : "Could not build an AI split plan.";
+        } finally {
+          aiBusy = false;
+          render();
+          const focusTarget = dialog.querySelector(".wiz-ai-pass-select") || dialog.querySelector("#wiz-ai-apply");
+          if (aiPlan && focusTarget && !focusTarget.hasAttribute("disabled"))
+            focusTarget.focus();
+        }
+      }, "wiz-ghost");
+      suggestBtn.id = "wiz-ai-generate";
+      suggestBtn.disabled = aiBusy;
+      actions.append(suggestBtn);
+      panel.append(actions);
+      if (aiError) {
+        const errEl = el("p", aiError, "wiz-ai-error");
+        errEl.id = "wiz-ai-error";
+        errEl.setAttribute("role", "alert");
+        panel.append(errEl);
+      }
+      if (aiPlan) {
+        const plan = aiPlan;
+        const review = el("div", "", "wiz-ai-review");
+        const head = el("div", "", "wiz-ai-review-head");
+        head.append(el("strong", "Proposed split plan"), el("span", plan.totalKm.toFixed(1) + " km total", "wiz-meta"));
+        review.append(head);
+        if (plan.errors.length) {
+          const errBox = el("div", "", "wiz-ai-error");
+          errBox.setAttribute("role", "alert");
+          for (const msg of plan.errors)
+            errBox.append(el("p", msg));
+          review.append(errBox);
+        }
+        const list = el("ol", "", "wiz-ai-plan");
+        list.setAttribute("role", "list");
+        plan.days.forEach((pd, idx) => {
+          const item = el("li", "", "wiz-ai-day");
+          const main = el("div", "", "wiz-ai-day-main");
+          const title = "Day " + pd.dayIndex + (pd.kind === "rest" ? " · Rest day" : "") + (pd.name && pd.name !== "Rest day" ? " · " + pd.name : "");
+          main.append(el("strong", title));
+          const detailsParts = [];
+          if (pd.kind === "ride") {
+            detailsParts.push(pd.km.toFixed(1) + " km");
+            if (pd.split?.resolved) {
+              const chosen = pd.split.candidates[pd.split.selectedPassIndex];
+              const distNote = chosen ? " (" + chosen.distanceKm.toFixed(1) + " km from track)" : "";
+              detailsParts.push("Ends at " + pd.split.resolved.name + distNote);
+            } else if (pd.inferredRemainder) {
+              detailsParts.push("Remainder of route");
+            } else if (pd.split?.error) {
+              detailsParts.push(pd.split.error);
+            }
+          }
+          if (detailsParts.length)
+            main.append(el("span", detailsParts.join(" · "), "wiz-meta"));
+          if (pd.overnight?.resolved) {
+            main.append(el("span", "Overnight: " + pd.overnight.resolved.name, "wiz-ai-badge"));
+          } else if (pd.overnight?.error) {
+            main.append(el("span", pd.overnight.error, "wiz-warn"));
+          }
+          item.append(main);
+          if (pd.split?.ambiguous && pd.split.candidates.length > 1) {
+            const passRow = el("div", "", "wiz-ai-pass-row");
+            const placeLabel = pd.split.resolved?.name || pd.split.query;
+            passRow.append(el("span", "Passed " + pd.split.candidates.length + " times", "wiz-warn"));
+            const selectId = "wiz-ai-pass-" + idx;
+            const lbl = el("label", "Confirm pass for " + placeLabel);
+            lbl.htmlFor = selectId;
+            const sel = el("select", "", "wiz-select-sm wiz-ai-pass-select");
+            sel.id = selectId;
+            pd.split.candidates.forEach((cand, cIdx) => {
+              const opt = el("option", "Pass " + (cIdx + 1) + " · " + cand.trackKm.toFixed(1) + " km");
+              opt.value = String(cIdx);
+              if (cIdx === pd.split.selectedPassIndex)
+                opt.selected = true;
+              sel.add(opt);
+            });
+            sel.onchange = () => {
+              aiPlan = selectPlanPass(plan, pd.id, Number(sel.value));
+              render();
+            };
+            passRow.append(lbl, sel);
+            item.append(passRow);
+          }
+          list.append(item);
+        });
+        review.append(list);
+        const reviewActions = el("div", "", "wiz-ai-review-actions");
+        const applyBtn = btn("Apply plan", () => {
+          try {
+            applyAiSplitPlan(project, plan);
+            activeDayId = project.days[0]?.id || "";
+            aiPlan = null;
+            aiError = "";
+            aiOpen = false;
+            setStatus("Applied AI split plan (" + project.days.length + " days).");
+            mutate();
+          } catch (e) {
+            aiError = e instanceof Error ? e.message : "Could not apply split plan.";
+            render();
+          }
+        }, "wiz-primary");
+        applyBtn.id = "wiz-ai-apply";
+        applyBtn.disabled = !plan.canApply;
+        const discardBtn = btn("Discard", () => {
+          aiPlan = null;
+          aiError = "";
+          render();
+        }, "wiz-link");
+        discardBtn.id = "wiz-ai-discard";
+        reviewActions.append(applyBtn, discardBtn);
+        review.append(reviewActions);
+        panel.append(review);
+      }
+      detailsEl.append(panel);
+      return detailsEl;
+    }
     function renderStep2(project) {
       if (!project.days.length) {
         content.append(btn("+ Rest day", () => {
           const rest = insertRestDay(project, 0);
           activeDayId = rest.id;
+          aiPlan = null;
           mutate();
         }, "wiz-ghost"));
         return;
@@ -2226,6 +3839,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       pills.append(btn("+ Rest day", () => {
         const rest = insertRestDay(project, index + 1);
         activeDayId = rest.id;
+        aiPlan = null;
         mutate();
       }, "wiz-pill-add"));
       content.append(pills);
@@ -2233,6 +3847,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
         hooks.deleteDay(day.id);
         const next = project.days[Math.min(index, project.days.length - 1)];
         activeDayId = next?.id || "";
+        aiPlan = null;
         setStatus("");
         mutate();
       }, "wiz-link wiz-danger");
@@ -2250,6 +3865,9 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
         };
         restRow.append(nameInput, deleteBtn());
         content.append(restRow);
+        const aiBox = renderAiSplitBox(project);
+        if (aiBox)
+          content.append(aiBox);
         return;
       }
       const ranges = combinedRanges([day]);
@@ -2278,12 +3896,15 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       const samples = [];
       bounds.lines.forEach((line, run) => {
         const r = visible[run];
+        const raw = segments[run];
         line.forEach((p, i) => samples.push({
           recordingId: r.recordingId,
           segment: r.segment,
           point: r.start + i,
           run,
           km: p.km,
+          lat: raw[i].lat,
+          lon: raw[i].lon,
           x: projectAxis(p.x, (bounds.east + bounds.west) / 2, 200),
           y: projectAxis(-p.y, -(bounds.north + bounds.south) / 2, 100)
         }));
@@ -2295,9 +3916,36 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
         const actions = el("div", "", "wiz-inline-tools");
         actions.append(deleteBtn());
         content.append(actions);
+        const aiBox = renderAiSplitBox(project);
+        if (aiBox)
+          content.append(aiBox);
         return;
       }
-      const map = svgEl("svg", { viewBox: "0 0 400 200", class: "wiz-split-map", "aria-label": "Choose a boundary on the recorded route" });
+      const mapWrap = el("div", "", "wiz-map-wrap");
+      const map = svgEl("svg", { viewBox: "0 0 400 200", class: "wiz-split-map", role: "img", "aria-label": "Choose a boundary on the recorded route" });
+      const zoomControls = el("div", "", "wiz-map-controls");
+      zoomControls.setAttribute("role", "group");
+      zoomControls.setAttribute("aria-label", "Map zoom");
+      let view = { zoom: 1, x: 0, y: 0 };
+      const fmt = (n) => String(Number(n.toFixed(2)));
+      const zoomOutBtn = btn("-", () => {
+        const anchor = { x: view.x + 200 / view.zoom, y: view.y + 100 / view.zoom };
+        view = zoomMapView(view, view.zoom / 2, anchor);
+        applyView();
+      }, "wiz-map-btn");
+      zoomOutBtn.setAttribute("aria-label", "Zoom out");
+      const zoomInBtn = btn("+", () => {
+        const anchor = { x: view.x + 200 / view.zoom, y: view.y + 100 / view.zoom };
+        view = zoomMapView(view, view.zoom * 2, anchor);
+        applyView();
+      }, "wiz-map-btn");
+      zoomInBtn.setAttribute("aria-label", "Zoom in");
+      const resetZoomBtn = btn("Reset", () => {
+        view = { zoom: 1, x: 0, y: 0 };
+        applyView();
+      }, "wiz-map-btn wiz-map-reset");
+      zoomControls.append(zoomOutBtn, zoomInBtn, resetZoomBtn);
+      mapWrap.append(map, zoomControls);
       const slider = el("input", "", "wiz-slider");
       slider.type = "range";
       slider.min = "1";
@@ -2310,15 +3958,33 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       const readout = el("span", "", "wiz-meta");
       let split = Math.floor(samples.length / 2);
       const xy = (q) => q.x.toFixed(1) + "," + q.y.toFixed(1);
+      function applyView() {
+        const vw = 400 / view.zoom;
+        const vh = 200 / view.zoom;
+        map.setAttribute("viewBox", `${fmt(view.x)} ${fmt(view.y)} ${fmt(vw)} ${fmt(vh)}`);
+        map.classList.toggle("is-zoomed", view.zoom > 1);
+        zoomOutBtn.disabled = view.zoom <= 1;
+        resetZoomBtn.disabled = view.zoom <= 1;
+        zoomInBtn.disabled = view.zoom >= MAX_MAP_ZOOM;
+        const strokeWidth = (3.5 / view.zoom).toFixed(2);
+        for (const path of map.querySelectorAll("path"))
+          path.setAttribute("stroke-width", strokeWidth);
+        const marker = map.querySelector("circle");
+        if (marker) {
+          marker.setAttribute("r", (5.5 / view.zoom).toFixed(2));
+          marker.setAttribute("stroke-width", (2.5 / view.zoom).toFixed(2));
+        }
+      }
       function draw() {
         slider.value = String(split);
         const chosen = samples[split];
         readout.textContent = chosen.km.toFixed(1) + " km  ·  " + (bounds.km - chosen.km).toFixed(1) + " km";
         map.replaceChildren();
         let path = "", prevColor = "", prevRun = -1;
+        const strokeWidth = (3.5 / view.zoom).toFixed(2);
         const flush = () => {
           if (path)
-            map.prepend(svgEl("path", { fill: "none", stroke: prevColor, "stroke-width": "3.5", "stroke-linejoin": "round", "stroke-linecap": "round", d: path }));
+            map.prepend(svgEl("path", { fill: "none", stroke: prevColor, "stroke-width": strokeWidth, "stroke-linejoin": "round", "stroke-linecap": "round", d: path }));
         };
         for (let i = 0;i < samples.length; i++) {
           const p = samples[i], color = i <= split ? day.color : "#8b948c";
@@ -2332,35 +3998,30 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
           prevColor = color;
         }
         flush();
-        map.append(svgEl("circle", { cx: String(chosen.x), cy: String(chosen.y), r: "5.5", fill: "#fff", stroke: "#173b33", "stroke-width": "2.5" }));
+        map.append(svgEl("circle", {
+          cx: String(chosen.x),
+          cy: String(chosen.y),
+          r: (5.5 / view.zoom).toFixed(2),
+          fill: "#fff",
+          stroke: "#173b33",
+          "stroke-width": (2.5 / view.zoom).toFixed(2)
+        }));
+        applyView();
       }
       const setSplit = (v) => {
         split = Math.max(1, Math.min(samples.length - 2, v));
         draw();
       };
-      slider.oninput = () => {
-        passes.hidden = true;
-        setSplit(Number(slider.value));
-      };
-      map.onclick = (ev) => {
-        const rect = map.getBoundingClientRect();
-        const loc = { x: (ev.clientX - rect.left) / rect.width * 400, y: (ev.clientY - rect.top) / rect.height * 200 };
-        const ds = samples.map((p) => Math.hypot(p.x - loc.x, p.y - loc.y));
-        let best = Infinity;
-        for (let i = 1;i < ds.length - 1; i++)
-          best = Math.min(best, ds[i]);
-        const candidates = [];
-        for (let i = 1;i < ds.length - 1; i++) {
-          if (ds[i] > best + 3)
-            continue;
-          const first = i;
-          while (i + 1 < ds.length - 1 && samples[i + 1].run === samples[first].run && Math.abs(ds[i + 1] - ds[first]) < 0.000001)
-            i++;
-          const before = first === 1 || samples[first - 1].run !== samples[first].run ? Infinity : ds[first - 1];
-          const after = i === ds.length - 2 || samples[i + 1].run !== samples[first].run ? Infinity : ds[i + 1];
-          if (ds[first] <= before && ds[first] <= after)
-            candidates.push(first);
-        }
+      function focusSplitOnMap() {
+        if (view.zoom <= 1)
+          return;
+        const chosen = samples[split];
+        const vw = 400 / view.zoom;
+        const vh = 200 / view.zoom;
+        view = clampMapView({ zoom: view.zoom, x: chosen.x - vw / 2, y: chosen.y - vh / 2 });
+        applyView();
+      }
+      function applyCandidates(candidates) {
         if (!candidates.length)
           return;
         passes.replaceChildren(...candidates.map((idx, n) => {
@@ -2370,23 +4031,162 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
         }));
         passes.hidden = candidates.length < 2;
         setSplit(candidates[0]);
+      }
+      slider.oninput = () => {
+        passes.hidden = true;
+        setSplit(Number(slider.value));
       };
-      passes.onchange = () => setSplit(Number(passes.value));
+      map.addEventListener("wheel", (ev) => {
+        ev.preventDefault();
+        const rect = map.getBoundingClientRect();
+        const anchor = clientToMapPoint(rect, view, ev.clientX, ev.clientY);
+        const factor = ev.deltaY < 0 ? 1.5 : 1 / 1.5;
+        view = zoomMapView(view, view.zoom * factor, anchor);
+        applyView();
+      }, { passive: false });
+      const DRAG_THRESHOLD_PX = 5;
+      let drag = null;
+      let suppressClickAt = null;
+      map.addEventListener("pointerdown", (ev) => {
+        suppressClickAt = null;
+        if (ev.button !== 0 || view.zoom <= 1)
+          return;
+        const pointerId = ev.pointerId ?? 0;
+        drag = { pointerId, startClientX: ev.clientX, startClientY: ev.clientY, startView: { ...view }, moved: false };
+        if (typeof map.setPointerCapture === "function" && ev.pointerId !== undefined)
+          map.setPointerCapture(ev.pointerId);
+      });
+      map.addEventListener("pointermove", (ev) => {
+        if (!drag || (ev.pointerId ?? 0) !== drag.pointerId)
+          return;
+        const dxPx = ev.clientX - drag.startClientX;
+        const dyPx = ev.clientY - drag.startClientY;
+        if (!drag.moved && Math.hypot(dxPx, dyPx) < DRAG_THRESHOLD_PX)
+          return;
+        drag.moved = true;
+        map.classList.add("is-panning");
+        view = panMapView(drag.startView, dxPx, dyPx, map.getBoundingClientRect());
+        applyView();
+      });
+      const endPan = (ev) => {
+        if (!drag || (ev.pointerId ?? 0) !== drag.pointerId)
+          return;
+        if (drag.moved)
+          suppressClickAt = { x: ev.clientX, y: ev.clientY };
+        if (typeof map.releasePointerCapture === "function" && ev.pointerId !== undefined && map.hasPointerCapture?.(ev.pointerId)) {
+          map.releasePointerCapture(ev.pointerId);
+        }
+        map.classList.remove("is-panning");
+        drag = null;
+      };
+      map.addEventListener("pointerup", endPan);
+      map.addEventListener("pointercancel", endPan);
+      map.onclick = (ev) => {
+        if (suppressClickAt) {
+          const suppressed = suppressClickAt;
+          suppressClickAt = null;
+          if (Math.hypot(ev.clientX - suppressed.x, ev.clientY - suppressed.y) < DRAG_THRESHOLD_PX)
+            return;
+        }
+        const rect = map.getBoundingClientRect();
+        const loc = clientToMapPoint(rect, view, ev.clientX, ev.clientY);
+        const candidates = pickBoundaryPasses(samples, loc, { zoom: view.zoom });
+        applyCandidates(candidates);
+      };
+      passes.onchange = () => {
+        setSplit(Number(passes.value));
+        focusSplitOnMap();
+      };
+      const findBox = document.createElement("search");
+      findBox.id = "wiz-step2-search";
+      findBox.className = "wiz-find-box";
+      findBox.hidden = !showStep2Search;
+      const findRow = el("div", "", "wiz-find-row");
+      const findInput = el("input", "", "wiz-input");
+      findInput.type = "search";
+      findInput.placeholder = "Search city or stop (e.g. Pai)";
+      findInput.setAttribute("aria-label", "Find place on route");
+      findInput.enterKeyHint = "search";
+      const findList = el("ul", "", "wiz-suggestions");
+      findList.id = "wiz-step2-suggestions";
+      findList.setAttribute("role", "list");
+      findList.setAttribute("aria-label", "Route place suggestions");
+      findList.hidden = true;
+      const findToggle = btn("Find place", () => {
+        showStep2Search = !showStep2Search;
+        findBox.hidden = !showStep2Search;
+        findToggle.setAttribute("aria-expanded", String(showStep2Search));
+        if (showStep2Search)
+          findInput.focus();
+        else
+          findToggle.focus();
+      }, "wiz-link");
+      findToggle.setAttribute("aria-expanded", String(showStep2Search));
+      findToggle.setAttribute("aria-controls", "wiz-step2-search");
+      const closeFind = btn("Close", () => {
+        showStep2Search = false;
+        findBox.hidden = true;
+        findToggle.setAttribute("aria-expanded", "false");
+        findToggle.focus();
+      }, "wiz-link");
+      findInput.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && findList.hidden && showStep2Search) {
+          e.preventDefault();
+          e.stopPropagation();
+          closeFind.click();
+        }
+      });
+      findRow.append(findInput, closeFind);
+      findBox.append(findRow, findList);
+      wirePlaceAutocomplete({
+        input: findInput,
+        list: findList,
+        bounds: trackBounds([segments]),
+        searchOnEnter: true,
+        onSelect: (place) => {
+          findInput.value = place.name;
+          const hits = snapPlaceToRoute(samples, place.coords);
+          if (!hits.length) {
+            setStatus("Could not snap " + place.name + " to this day’s route.");
+            return;
+          }
+          applyCandidates(hits.map((h) => h.index));
+          focusSplitOnMap();
+          const nearest = hits[0].distanceKm;
+          const distNote = nearest < 0.1 ? "on route" : nearest.toFixed(1) + " km from route";
+          if (hits.length >= 2) {
+            setStatus(`Found ${hits.length} passes near ${place.name} (${distNote}). Pick a pass and choose Split here.`);
+            passes.focus();
+          } else {
+            setStatus(`Moved split to ${place.name} (${distNote}). Choose Split here to confirm.`);
+          }
+        },
+        onError: (msg) => setStatus(msg),
+        onEmpty: () => setStatus("No matching places found."),
+        onClear: () => setStatus("")
+      });
       const bar = el("div", "", "wiz-split-bar");
+      const barLeft = el("div", "", "wiz-split-left");
+      barLeft.append(readout, findToggle);
       const barActions = el("div", "", "wiz-stop-actions");
       barActions.append(deleteBtn(), btn("Split here", () => {
         try {
           const nextDay = setBoundary(project, day, null, samples[split]);
           activeDayId = nextDay.id;
+          showStep2Search = false;
+          aiPlan = null;
           setStatus("");
           mutate();
         } catch (e) {
           setStatus(e.message);
         }
       }, "wiz-ghost"));
-      bar.append(readout, barActions);
+      bar.append(barLeft, barActions);
       draw();
-      content.append(map, passes, slider, bar);
+      content.append(findBox, mapWrap, passes, slider, bar);
+      const aiBox = renderAiSplitBox(project);
+      if (aiBox)
+        content.append(aiBox);
     }
     function toggleOvernight(project, place, day) {
       const existing = project.visits.find((v) => v.placeId === place.id && v.dayId === day.id && v.overnight);
@@ -2458,11 +4258,14 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       content.append(toggleAdd);
       if (!showAddPlace)
         return;
+      const panel = el("div", "", "wiz-add-panel");
       const form = el("div", "", "wiz-add-row");
       const nameIn = el("input", "", "wiz-input");
+      nameIn.type = "text";
       nameIn.placeholder = "Place name";
       nameIn.setAttribute("aria-label", "Place name");
       const locIn = el("input", "", "wiz-input");
+      locIn.type = "text";
       locIn.placeholder = "Lat, lon or map link";
       locIn.setAttribute("aria-label", "Location");
       const add = btn("Add", () => {
@@ -2477,7 +4280,95 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
         mutate();
       }, "wiz-primary");
       form.append(nameIn, locIn, add);
-      content.append(form);
+      const suggestions = el("ul", "", "wiz-suggestions");
+      suggestions.id = "wiz-stop-suggestions";
+      suggestions.setAttribute("role", "list");
+      suggestions.setAttribute("aria-label", "Place suggestions");
+      suggestions.hidden = true;
+      const includedTracks = project.recordings.filter((r) => r.included).map((r) => r.track);
+      wirePlaceAutocomplete({
+        input: nameIn,
+        list: suggestions,
+        bounds: trackBounds(includedTracks),
+        onSelect: (place) => {
+          nameIn.value = place.name;
+          locIn.value = `${place.coords.lat.toFixed(6)}, ${place.coords.lon.toFixed(6)}`;
+          setStatus(`Selected ${place.name}. Choose Add to save.`);
+          add.focus();
+        },
+        onError: (msg) => setStatus(msg),
+        onClear: () => setStatus("")
+      });
+      const keyBar = el("div", "", "wiz-key-bar");
+      const providerNote = el("span");
+      const keyPanel = el("div", "", "wiz-key-panel");
+      keyPanel.id = "wiz-places-key-panel";
+      keyPanel.hidden = true;
+      const keyLabel = el("label", "Google Places API key", "wiz-key-label");
+      keyLabel.htmlFor = "wiz-google-key";
+      const keyRow = el("div", "", "wiz-key-row");
+      const keyInput = el("input", "", "wiz-input");
+      keyInput.id = "wiz-google-key";
+      keyInput.type = "password";
+      keyInput.placeholder = "Paste Google Places key";
+      keyInput.autocomplete = "off";
+      keyInput.spellcheck = false;
+      keyInput.setAttribute("aria-describedby", "wiz-google-key-note");
+      const keyNote = el("small", "Stored only in this browser (never in trip backups). Leave blank to use free OpenStreetMap search.", "wiz-key-note");
+      keyNote.id = "wiz-google-key-note";
+      const keyToggle = btn("", () => {
+        keyPanel.hidden = !keyPanel.hidden;
+        keyToggle.setAttribute("aria-expanded", String(!keyPanel.hidden));
+        if (!keyPanel.hidden) {
+          keyInput.value = getGooglePlacesKey();
+          keyInput.focus();
+        }
+      }, "wiz-link");
+      keyToggle.setAttribute("aria-expanded", "false");
+      keyToggle.setAttribute("aria-controls", "wiz-places-key-panel");
+      const clearKeyBtn = btn("Clear", () => {
+        setGooglePlacesKey("");
+        keyInput.value = "";
+        keyPanel.hidden = true;
+        keyToggle.setAttribute("aria-expanded", "false");
+        syncKeyUi();
+        setStatus("Cleared Google Places key — using OpenStreetMap search.");
+        keyToggle.focus();
+      }, "wiz-link");
+      const saveKeyBtn = btn("Save key", () => {
+        const saved = setGooglePlacesKey(keyInput.value);
+        keyPanel.hidden = true;
+        keyToggle.setAttribute("aria-expanded", "false");
+        syncKeyUi();
+        setStatus(saved ? "Google Places key saved in this browser only." : "Cleared Google Places key — using OpenStreetMap search.");
+        keyToggle.focus();
+      }, "wiz-ghost");
+      keyInput.addEventListener("keydown", (e) => {
+        if (e.isComposing)
+          return;
+        if (e.key === "Enter") {
+          e.preventDefault();
+          saveKeyBtn.click();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          keyPanel.hidden = true;
+          keyToggle.setAttribute("aria-expanded", "false");
+          keyToggle.focus();
+        }
+      });
+      function syncKeyUi() {
+        const active = Boolean(getGooglePlacesKey());
+        providerNote.textContent = active ? "Search: Google Places (this browser)" : "Search: OpenStreetMap (free)";
+        keyToggle.textContent = active ? "Google key · active" : "Google key";
+        clearKeyBtn.hidden = !active;
+      }
+      syncKeyUi();
+      keyRow.append(keyInput, saveKeyBtn, clearKeyBtn);
+      keyPanel.append(keyLabel, keyRow, keyNote);
+      keyBar.append(providerNote, keyToggle);
+      panel.append(form, suggestions, keyBar, keyPanel);
+      content.append(panel);
     }
     function renderStep4(project) {
       const bar = el("div", "", "wiz-photo-bar");
@@ -2728,6 +4619,7 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       content.append(actions);
     }
     function renderContent() {
+      cancelSearches();
       const project = hooks.getProject();
       dialog.dataset.step = String(step);
       counterEl.textContent = step + " / " + STEP_TITLES.length;
@@ -2768,12 +4660,20 @@ dialog#wizard-dialog::backdrop{background:rgba(20,52,43,.92);backdrop-filter:blu
       renderContent();
     }
     function reset() {
+      cancelSearches();
       step = 1;
       activeDayId = "";
       showAddPlace = false;
+      showStep2Search = false;
       photoDayId = "";
       expandedCropPhotoId = "";
       statusText = "";
+      aiOpen = false;
+      aiSettingsOpen = null;
+      aiPrompt = "";
+      aiBusy = false;
+      aiError = "";
+      aiPlan = null;
     }
     return { show, hide, render, reset, isOpen };
   }

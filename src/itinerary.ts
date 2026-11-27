@@ -191,3 +191,93 @@ export function possibleOverlap(a:Recording,b:Recording) {
   for(const cell of smaller) if(larger.has(cell)) matched++
   return smaller.size>0 && matched/smaller.size>=0.25
 }
+
+export type MapSample={x:number,y:number,km:number,run:number}
+export type PickPassesOptions={zoom?:number,hitMargin?:number,leaveMargin?:number}
+
+// Hysteresis pass clustering collapses GPS jitter and tight switchback wiggles within
+// one continuous visit into its closest point, starting a new pass only after the route
+// leaves the click neighborhood by a clear margin and returns later.
+export function pickBoundaryPasses(
+  samples:readonly MapSample[],
+  point:{x:number,y:number},
+  options:PickPassesOptions={},
+):number[] {
+  if(samples.length<3) return []
+  const zoom=Math.max(1,options.zoom ?? 1)
+  const hitMargin=(options.hitMargin ?? 3)/zoom
+  const leaveMargin=Math.max(hitMargin*2,(options.leaveMargin ?? 12)/zoom)
+  const ds=samples.map(p=>Math.hypot(p.x-point.x,p.y-point.y))
+  let best=Infinity
+  for(let i=1;i<ds.length-1;i++) if(ds[i]<best) best=ds[i]
+  if(!Number.isFinite(best)) return []
+  const hitLimit=best+hitMargin
+  const leaveLimit=best+leaveMargin
+  const passes:number[]=[]
+  let activeIndex=-1
+  let activeDist=Infinity
+  for(let i=1;i<ds.length-1;i++) {
+    const d=ds[i]
+    if(d<=hitLimit) {
+      if(activeIndex<0 || d<activeDist) { activeIndex=i; activeDist=d }
+    } else if(activeIndex>=0 && d>leaveLimit) {
+      passes.push(activeIndex)
+      activeIndex=-1
+      activeDist=Infinity
+    }
+  }
+  if(activeIndex>=0) passes.push(activeIndex)
+  return passes
+}
+
+export type MapView={zoom:number,x:number,y:number}
+export const MAX_MAP_ZOOM=16
+
+export function clampMapView(view:MapView,width=400,height=200):MapView {
+  const zoom=Math.max(1,Math.min(MAX_MAP_ZOOM,Number.isFinite(view.zoom)?view.zoom:1))
+  const vw=width/zoom, vh=height/zoom
+  const x=Math.max(0,Math.min(width-vw,Number.isFinite(view.x)?view.x:0))
+  const y=Math.max(0,Math.min(height-vh,Number.isFinite(view.y)?view.y:0))
+  return {zoom,x,y}
+}
+
+export function zoomMapView(view:MapView,nextZoom:number,anchor:{x:number,y:number},width=400,height=200):MapView {
+  const cur=clampMapView(view,width,height)
+  const zoom=Math.max(1,Math.min(MAX_MAP_ZOOM,Number.isFinite(nextZoom)?nextZoom:cur.zoom))
+  const curVw=width/cur.zoom, curVh=height/cur.zoom
+  const nextVw=width/zoom, nextVh=height/zoom
+  const rx=(anchor.x-cur.x)/curVw
+  const ry=(anchor.y-cur.y)/curVh
+  return clampMapView({zoom,x:anchor.x-rx*nextVw,y:anchor.y-ry*nextVh},width,height)
+}
+
+export function panMapView(
+  view:MapView,
+  dxPx:number,
+  dyPx:number,
+  rect:{width:number,height:number},
+  width=400,
+  height=200,
+):MapView {
+  const cur=clampMapView(view,width,height)
+  if(cur.zoom<=1) return cur
+  const vw=width/cur.zoom, vh=height/cur.zoom
+  const sx=vw/(rect.width || width), sy=vh/(rect.height || height)
+  return clampMapView({zoom:cur.zoom,x:cur.x-dxPx*sx,y:cur.y-dyPx*sy},width,height)
+}
+
+export function clientToMapPoint(
+  rect:{left:number,top:number,width:number,height:number},
+  view:MapView,
+  clientX:number,
+  clientY:number,
+  width=400,
+  height=200,
+) {
+  const cur=clampMapView(view,width,height)
+  const vw=width/cur.zoom, vh=height/cur.zoom
+  return {
+    x:cur.x+(clientX-rect.left)/(rect.width || 1)*vw,
+    y:cur.y+(clientY-rect.top)/(rect.height || 1)*vh,
+  }
+}

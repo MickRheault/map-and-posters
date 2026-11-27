@@ -15,9 +15,10 @@ beforeAll(async()=>{
 
 // JSDOM provides XML parsing, DOM, and UI events. Supply its missing storage,
 // graphics, and download primitives. libvips rasterizes the actual exported SVG.
-function editor(store=new Map<string,unknown>()) {
+function editor(store=new Map<string,unknown>(), fetchImpl?: typeof fetch) {
   const urls=new Map<string,Blob>(),downloads=new Map<string,Blob>()
   function install(w: DOMWindow) {
+    if (fetchImpl) w.fetch = fetchImpl
     w.confirm=()=>true
     w.Blob=Blob
     w.TextEncoder=TextEncoder
@@ -127,8 +128,8 @@ async function until(check:()=>boolean,reason:string) {
   if(!check()) throw new Error(reason)
 }
 
-async function open(store?:Map<string,unknown>) {
-  const app=editor(store)
+async function open(store?:Map<string,unknown>, fetchImpl?: typeof fetch) {
+  const app=editor(store, fetchImpl)
   await until(()=>!app.doc.querySelector<HTMLInputElement>('#file')!.disabled,'Editor did not open')
   return app
 }
@@ -606,6 +607,403 @@ test('deleting uploaded GPX files works in Wizard Step 1 and Full editor, and St
     app.doc.querySelector<HTMLButtonElement>('#itinerary button[aria-label="Delete east.gpx"]')!.click()
     expect(app.doc.querySelectorAll('#itinerary .recording-row')).toHaveLength(0)
     expect(app.doc.querySelector('#output')?.innerHTML).toBe('')
+  } finally {
+    await Bun.sleep(0)
+    app.dom.window.close()
+  }
+})
+
+test('Step 2 split map supports zoom controls, wheel zoom, drag pan without accidental pick, accurate zoomed clicks, and jitter collapse', async()=>{
+  const app=await open()
+  try {
+    const dialog=()=>app.doc.querySelector<HTMLDialogElement>('#wizard-dialog')!
+    // Long west-to-east route with a tight jittery wiggle near the middle (lon=0.5)
+    const route=gpx('Tour.gpx',[
+      [18,0],[18,0.25],[18,0.49],[18.001,0.50],[17.999,0.506],[18.0005,0.501],
+      [17.998,0.507],[18.0002,0.5005],[18,0.75],[18,1.0]
+    ])
+    await app.upload('#wizard-gpx',[route])
+    app.button('Continue')
+
+    const map=dialog().querySelector<SVGSVGElement>('svg.wiz-split-map')!
+    Object.defineProperty(map,'getBoundingClientRect',{value:()=>({left:0,top:0,width:400,height:200})})
+    const zoomIn=dialog().querySelector<HTMLButtonElement>('button[aria-label="Zoom in"]')!
+    const zoomOut=dialog().querySelector<HTMLButtonElement>('button[aria-label="Zoom out"]')!
+    const resetZoom=Array.from(dialog().querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent==='Reset')!
+    const slider=dialog().querySelector<HTMLInputElement>('input.wiz-slider')!
+    const passes=dialog().querySelector<HTMLSelectElement>('select[aria-label="Matching visits"]')!
+
+    expect(map.getAttribute('viewBox')).toBe('0 0 400 200')
+    expect(zoomOut.disabled).toBe(true)
+    expect(resetZoom.disabled).toBe(true)
+
+    // Clicking the jittery middle at 1x collapses to 1 pass (dropdown stays hidden)
+    map.dispatchEvent(new app.dom.window.MouseEvent('click',{clientX:200,clientY:100}))
+    expect(passes.hidden).toBe(true)
+
+    // Zoom in with + button updates viewBox and enables - / Reset
+    zoomIn.click()
+    const vbAfterIn=map.getAttribute('viewBox')!.split(' ').map(Number)
+    expect(vbAfterIn[2]).toBeLessThan(400)
+    expect(vbAfterIn[3]).toBeLessThan(200)
+    expect(zoomOut.disabled).toBe(false)
+    expect(resetZoom.disabled).toBe(false)
+
+    // Mouse wheel zoom further zooms in around cursor
+    const widthBeforeWheel=vbAfterIn[2]
+    map.dispatchEvent(new app.dom.window.WheelEvent('wheel',{deltaY:-100,clientX:300,clientY:100,cancelable:true}))
+    const vbAfterWheel=map.getAttribute('viewBox')!.split(' ').map(Number)
+    expect(vbAfterWheel[2]).toBeLessThan(widthBeforeWheel)
+
+    // Pointer drag pans the map WITHOUT changing the chosen split point (even if click fires after pointerup)
+    const splitBeforeDrag=slider.value
+    const xBeforePan=vbAfterWheel[0]
+    const PointerEvt=app.dom.window.MouseEvent
+    map.dispatchEvent(new PointerEvt('pointerdown',{button:0,clientX:200,clientY:100}))
+    map.dispatchEvent(new PointerEvt('pointermove',{button:0,clientX:120,clientY:100}))
+    map.dispatchEvent(new PointerEvt('pointerup',{button:0,clientX:120,clientY:100}))
+    map.dispatchEvent(new app.dom.window.MouseEvent('click',{clientX:120,clientY:100}))
+    const vbAfterPan=map.getAttribute('viewBox')!.split(' ').map(Number)
+    expect(vbAfterPan[0]).toBeGreaterThan(xBeforePan)
+    expect(slider.value).toBe(splitBeforeDrag)
+
+    // Clicking on the eastern portion while zoomed & panned picks a point well east of the midpoint (index 8 = lon 0.75)
+    // Reset then zoom in 2x (viewBox 100 50 200 100) and pan right so x=293 (lon=0.75) is visible at center
+    resetZoom.click()
+    expect(map.getAttribute('viewBox')).toBe('0 0 400 200')
+    zoomIn.click() // 2x -> viewBox 100 50 200 100
+    // Drag left by 186 screen px (= +93 SVG units) -> viewBox x becomes 193, center is x = 193 + 100 = 293 (lon 0.75 -> sample index 8)
+    map.dispatchEvent(new PointerEvt('pointerdown',{button:0,clientX:300,clientY:100}))
+    map.dispatchEvent(new PointerEvt('pointermove',{button:0,clientX:114,clientY:100}))
+    map.dispatchEvent(new PointerEvt('pointerup',{button:0,clientX:114,clientY:100}))
+    map.dispatchEvent(new app.dom.window.MouseEvent('click',{clientX:200,clientY:100}))
+    expect(Number(slider.value)).toBe(8)
+
+    // Zoom out returns to 1x and disables - and Reset
+    zoomOut.click()
+    expect(map.getAttribute('viewBox')).toBe('0 0 400 200')
+    expect(zoomOut.disabled).toBe(true)
+    expect(resetZoom.disabled).toBe(true)
+  } finally {
+    await Bun.sleep(0)
+    app.dom.window.close()
+  }
+})
+
+test('wizard Step 3 autocomplete uses Photon by default, switches to Google key in localStorage without leaking into backups, and degrades offline', async()=>{
+  let failNetwork = false
+  const calls: { url: string, headers: Record<string, string>, body?: unknown }[] = []
+  const mockFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    const headers = Object.fromEntries(new Headers(init?.headers).entries())
+    const body = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined
+    calls.push({ url, headers, body })
+    if (failNetwork) throw new TypeError('Failed to fetch')
+    if (url.startsWith('https://photon.komoot.io/api/')) {
+      return new Response(JSON.stringify({
+        type: 'FeatureCollection',
+        features: [{
+          geometry: { type: 'Point', coordinates: [98.4405, 19.3582] },
+          properties: { osm_id: 1, osm_type: 'N', name: 'Pai', state: 'Mae Hong Son', country: 'Thailand' },
+        }],
+      }), { status: 200 })
+    }
+    if (url.includes('places:autocomplete')) {
+      return new Response(JSON.stringify({
+        suggestions: [{
+          placePrediction: {
+            placeId: 'ChIJ_coffee_1',
+            structuredFormat: {
+              mainText: { text: 'Coffee in Love' },
+              secondaryText: { text: 'Pai, Mae Hong Son, Thailand' },
+            },
+          },
+        }],
+      }), { status: 200 })
+    }
+    if (url.includes('/v1/places/ChIJ_coffee_1')) {
+      return new Response(JSON.stringify({
+        displayName: { text: 'Coffee in Love' },
+        formattedAddress: 'Pai, Mae Hong Son, Thailand',
+        location: { latitude: 19.3391, longitude: 98.4452 },
+      }), { status: 200 })
+    }
+    return new Response('Not found', { status: 404 })
+  }) as typeof fetch
+
+  const app = await open(undefined, mockFetch)
+  try {
+    const dialog = () => app.doc.querySelector<HTMLDialogElement>('#wizard-dialog')!
+    const route = gpx('pai.gpx', [[19.35, 98.43], [19.36, 98.44], [19.37, 98.45]])
+    await app.upload('#wizard-gpx', [route])
+    dialog().querySelector<HTMLButtonElement>('[data-step="3"]')!.click()
+
+    // 1. Default free Photon autocomplete biased to GPX bbox
+    app.button('+ Add place')
+    const nameIn = () => dialog().querySelector<HTMLInputElement>('input[aria-label="Place name"]')!
+    const locIn = () => dialog().querySelector<HTMLInputElement>('input[aria-label="Location"]')!
+    nameIn().value = 'Pai'
+    nameIn().dispatchEvent(new app.dom.window.Event('input', { bubbles: true }))
+    await until(() => dialog().querySelectorAll('#wiz-stop-suggestions button').length === 1, 'Photon suggestion did not render')
+    expect(calls[0].url).toContain('https://photon.komoot.io/api/')
+    expect(calls[0].url).toContain('bbox=')
+    dialog().querySelector<HTMLButtonElement>('#wiz-stop-suggestions button')!.click()
+    await until(() => locIn().value.includes('19.358200'), 'Location input was not populated from Photon suggestion')
+    expect(nameIn().value).toBe('Pai')
+    app.button('Add')
+    expect(dialog().textContent).toContain('Pai')
+
+    // 2. Save Google Places key in localStorage only and verify Google Places v1 autocomplete + details
+    app.button('+ Add place')
+    app.button('Google key')
+    const keyIn = dialog().querySelector<HTMLInputElement>('#wiz-google-key')!
+    keyIn.value = 'AIza-local-only-key'
+    app.button('Save key')
+    expect(app.dom.window.localStorage.getItem('map-and-posters:google-places-key')).toBe('AIza-local-only-key')
+    expect(dialog().textContent).toContain('Google key · active')
+
+    nameIn().value = 'Coffee'
+    nameIn().dispatchEvent(new app.dom.window.Event('input', { bubbles: true }))
+    await until(() => dialog().querySelectorAll('#wiz-stop-suggestions button').length === 1, 'Google suggestion did not render')
+    const acCall = calls.find(c => c.url.includes('places:autocomplete'))!
+    expect(acCall.headers['x-goog-api-key']).toBe('AIza-local-only-key')
+    expect((acCall.body as { locationBias?: unknown }).locationBias).toBeTruthy()
+    dialog().querySelector<HTMLButtonElement>('#wiz-stop-suggestions button')!.click()
+    await until(() => locIn().value.includes('19.339100'), 'Google place details did not populate coordinates')
+    expect(nameIn().value).toBe('Coffee in Love')
+    app.button('Add')
+    expect(dialog().textContent).toContain('Coffee in Love')
+
+    // 3. Exported JSON backup must NEVER contain the Google API key
+    dialog().querySelector<HTMLButtonElement>('[data-step="5"]')!.click()
+    dialog().querySelector<HTMLButtonElement>('#wizard-backup')!.click()
+    const backupText = await app.downloads.get('map-and-posters-backup.json')!.text()
+    expect(backupText).not.toContain('AIza-local-only-key')
+    expect(backupText).not.toContain('google-places-key')
+
+    // 4. Clearing key reverts to Photon, and offline failure never blocks manual coordinates
+    dialog().querySelector<HTMLButtonElement>('[data-step="3"]')!.click()
+    app.button('+ Add place')
+    app.button('Google key · active')
+    app.button('Clear')
+    expect(app.dom.window.localStorage.getItem('map-and-posters:google-places-key')).toBeNull()
+
+    failNetwork = true
+    nameIn().value = 'Offline ridge'
+    nameIn().dispatchEvent(new app.dom.window.Event('input', { bubbles: true }))
+    await until(() => /offline/i.test(dialog().querySelector('#wizard-status')?.textContent || ''), 'Offline status did not appear')
+    locIn().value = '19.365, 98.445'
+    app.button('Add')
+    expect(dialog().textContent).toContain('Offline ridge')
+  } finally {
+    await Bun.sleep(0)
+    app.dom.window.close()
+  }
+})
+
+test('wizard Step 2 Find place snaps a searched town onto the GPX route with multi-pass disambiguation before Split here', async()=>{
+  const mockFetch = (async () => new Response(JSON.stringify({
+    type: 'FeatureCollection',
+    features: [{
+      geometry: { type: 'Point', coordinates: [98.01, 18.0] },
+      properties: { osm_id: 7, osm_type: 'N', name: 'Farm homestay', state: 'Chiang Mai', country: 'Thailand' },
+    }],
+  }), { status: 200 })) as typeof fetch
+
+  const app = await open(undefined, mockFetch)
+  try {
+    const dialog = () => app.doc.querySelector<HTMLDialogElement>('#wizard-dialog')!
+    const route = gpx('Loop.gpx', [[18, 98, 300], [18, 98.01, 310], [18.02, 98.01, 1800], [18, 98.01, 310], [18, 98, 300], [18, 98.03, 320], [18, 98.05, 340]])
+    await app.upload('#wizard-gpx', [route])
+    app.button('Continue')
+
+    // Open Find place search toggle on Step 2
+    const findBox = dialog().querySelector<HTMLElement>('#wiz-step2-search')!
+    expect(findBox.hidden).toBe(true)
+    app.button('Find place')
+    expect(findBox.hidden).toBe(false)
+
+    const findInput = dialog().querySelector<HTMLInputElement>('input[aria-label="Find place on route"]')!
+    findInput.value = 'Farm'
+    findInput.dispatchEvent(new app.dom.window.Event('input', { bubbles: true }))
+    await until(() => dialog().querySelectorAll('#wiz-step2-suggestions button').length === 1, 'Step 2 suggestion did not render')
+    dialog().querySelector<HTMLButtonElement>('#wiz-step2-suggestions button')!.click()
+
+    // Wait for snap & pass disambiguation without auto-splitting
+    const passes = dialog().querySelector<HTMLSelectElement>('select[aria-label="Matching visits"]')!
+    await until(() => !passes.hidden && passes.options.length === 2, 'Step 2 Find place did not expose both passes')
+    expect(dialog().querySelectorAll('.wiz-day-pill')).toHaveLength(1)
+    expect(dialog().querySelector('#wizard-status')?.textContent).toContain('Split here')
+
+    // Choose 2nd pass and confirm with Split here
+    app.change(passes, passes.options[1].value)
+    app.button('Split here')
+    expect(dialog().querySelectorAll('.wiz-day-pill')).toHaveLength(2)
+
+    // Verify split actually occurred at point index 3 (the 2nd visit to 18, 98.01)
+    dialog().querySelector<HTMLButtonElement>('[data-step="5"]')!.click()
+    dialog().querySelector<HTMLButtonElement>('#wizard-backup')!.click()
+    const saved = JSON.parse(await app.downloads.get('map-and-posters-backup.json')!.text()).project
+    expect(saved.days[0].ranges[0].end).toBe(3)
+    expect(saved.days[1].ranges[0].start).toBe(3)
+  } finally {
+    await Bun.sleep(0)
+    app.dom.window.close()
+  }
+})
+
+test('Step 2 Find place keeps zoomed split map viewBox synchronized with snapped marker alongside Ask AI', async()=>{
+  const mockFetch = (async () => new Response(JSON.stringify({
+    type: 'FeatureCollection',
+    features: [{
+      geometry: { type: 'Point', coordinates: [0.75, 18.0] },
+      properties: { osm_id: 9, osm_type: 'N', name: 'East pass', country: 'Thailand' },
+    }],
+  }), { status: 200 })) as typeof fetch
+
+  const app = await open(undefined, mockFetch)
+  try {
+    const dialog = () => app.doc.querySelector<HTMLDialogElement>('#wizard-dialog')!
+    const route = gpx('WestEast.gpx', [[18, 0], [18, 0.25], [18, 0.5], [18, 0.75], [18, 1.0]])
+    await app.upload('#wizard-gpx', [route])
+    app.button('Continue')
+
+    // All three Step 2 features coexist cleanly
+    expect(dialog().querySelector('button[aria-label="Zoom in"]')).not.toBeNull()
+    expect(dialog().querySelector('#wiz-step2-search')).not.toBeNull()
+    expect(dialog().querySelector('details.wiz-ai')).not.toBeNull()
+
+    const map = dialog().querySelector<SVGSVGElement>('svg.wiz-split-map')!
+    Object.defineProperty(map, 'getBoundingClientRect', { value: () => ({ left: 0, top: 0, width: 400, height: 200 }) })
+    dialog().querySelector<HTMLButtonElement>('button[aria-label="Zoom in"]')!.click()
+    dialog().querySelector<HTMLButtonElement>('button[aria-label="Zoom in"]')!.click() // 4x zoom (100x50 viewBox centered at 200,100)
+
+    app.button('Find place')
+    const findInput = dialog().querySelector<HTMLInputElement>('input[aria-label="Find place on route"]')!
+    findInput.value = 'East'
+    findInput.dispatchEvent(new app.dom.window.Event('input', { bubbles: true }))
+    await until(() => dialog().querySelectorAll('#wiz-step2-suggestions button').length === 1, 'East suggestion did not render')
+    dialog().querySelector<HTMLButtonElement>('#wiz-step2-suggestions button')!.click()
+
+    await until(() => Number(dialog().querySelector<HTMLInputElement>('input.wiz-slider')!.value) === 3, 'Find place did not move split to index 3')
+    const marker = map.querySelector('circle')!
+    const cx = Number(marker.getAttribute('cx'))
+    const cy = Number(marker.getAttribute('cy'))
+    const [vx, vy, vw, vh] = map.getAttribute('viewBox')!.split(' ').map(Number)
+    expect(vw).toBe(100)
+    expect(cx).toBeGreaterThanOrEqual(vx)
+    expect(cx).toBeLessThanOrEqual(vx + vw)
+    expect(cy).toBeGreaterThanOrEqual(vy)
+    expect(cy).toBeLessThanOrEqual(vy + vh)
+    expect(Number(marker.getAttribute('r'))).toBeCloseTo(5.5 / 4, 2)
+  } finally {
+    await Bun.sleep(0)
+    app.dom.window.close()
+  }
+})
+
+test('Step 2 Ask AI stays collapsed by default, previews multi-pass split without mutating project, applies on click, keeps secrets out of backups, and degrades cleanly offline', async()=>{
+  const app=await open()
+  try {
+    const dialog=()=>app.doc.querySelector<HTMLDialogElement>('#wizard-dialog')!
+    const route=gpx('mhs-loop.gpx',[
+      [18.80,98.98,310],
+      [19.36,98.44,500], // Pass 1 through Pai
+      [19.50,98.44,850], // Excursion north
+      [19.36,98.44,500], // Pass 2 through Pai
+      [19.30,97.96,240], // Mae Hong Son
+    ])
+    await app.upload('#wizard-gpx',[route])
+    app.button('Continue')
+
+    // Collapsible Ask AI starts closed and out of the way
+    const aiDetails=dialog().querySelector<HTMLDetailsElement>('details.wiz-ai')!
+    expect(aiDetails).not.toBeNull()
+    expect(aiDetails.open).toBe(false)
+
+    // Mock fetch on JSDOM window (zero live network calls)
+    ;(app.dom.window as unknown as { fetch: typeof fetch }).fetch=(async(input:RequestInfo|URL)=>{
+      const url=String(input)
+      if(url.includes('chat/completions')) {
+        return new Response(JSON.stringify({
+          choices:[{
+            message:{
+              content:JSON.stringify({
+                days:[
+                  {dayNumber:1,kind:'ride',endPlace:'Pai',overnightPlace:'Pai',lat:0,lon:0},
+                  {dayNumber:2,kind:'rest',name:'Pai',overnightPlace:'Pai'},
+                ]
+              })
+            }
+          }]
+        }),{status:200,headers:{'Content-Type':'application/json'}})
+      }
+      if(url.includes('photon.komoot.io/api/')) {
+        return new Response(JSON.stringify({
+          features:[{geometry:{coordinates:[98.44,19.36]},properties:{name:'Pai'}}]
+        }),{status:200,headers:{'Content-Type':'application/json'}})
+      }
+      throw new Error('Unexpected fetch URL: '+url)
+    }) as typeof fetch
+
+    aiDetails.open=true
+    aiDetails.dispatchEvent(new app.dom.window.Event('toggle'))
+
+    const keyIn=dialog().querySelector<HTMLInputElement>('#wiz-ai-key')!
+    app.change(keyIn,'sk-workflow-secret-key')
+    expect(app.dom.window.localStorage.getItem('map-and-posters:ai-api-key')).toBe('sk-workflow-secret-key')
+
+    const promptIn=dialog().querySelector<HTMLTextAreaElement>('#wiz-ai-prompt')!
+    promptIn.value='Day 1 finished in Pai, Day 2 was a rest day in Pai'
+    promptIn.dispatchEvent(new app.dom.window.Event('input',{bubbles:true}))
+
+    dialog().querySelector<HTMLButtonElement>('#wiz-ai-generate')!.click()
+    await until(()=>Boolean(dialog().querySelector('.wiz-ai-review')),'AI review plan did not appear')
+
+    // Project must NOT be mutated before explicit Apply plan click
+    expect(dialog().querySelectorAll('.wiz-day-pill')).toHaveLength(1)
+    expect(dialog().querySelectorAll('.wiz-ai-day')).toHaveLength(3)
+
+    // Multi-pass ambiguity detected for Pai; switch from Pass 1 to Pass 2
+    const passSelect=dialog().querySelector<HTMLSelectElement>('.wiz-ai-pass-select')!
+    expect(passSelect.options).toHaveLength(2)
+    const day1Before=dialog().querySelector('.wiz-ai-day')!.textContent!
+    app.change(passSelect,'1')
+    const day1After=dialog().querySelector('.wiz-ai-day')!.textContent!
+    expect(day1After).not.toBe(day1Before)
+
+    // One-click approval applies split, rest day, and overnight stop
+    dialog().querySelector<HTMLButtonElement>('#wiz-ai-apply')!.click()
+    const pills=Array.from(dialog().querySelectorAll('.wiz-day-pill')).map(p=>p.textContent)
+    expect(pills).toEqual(['Day 1','Day 2 · Pai','Day 3'])
+
+    // Verify backup stays schema v1 valid and contains zero secrets
+    dialog().querySelector<HTMLButtonElement>('[data-step="5"]')!.click()
+    dialog().querySelector<HTMLButtonElement>('#wizard-backup')!.click()
+    const backupText=await app.downloads.get('map-and-posters-backup.json')!.text()
+    expect(backupText).not.toContain('sk-workflow-secret-key')
+    const parsed=JSON.parse(backupText)
+    expect(parsed.version).toBe(1)
+    expect(parsed.project.days).toHaveLength(3)
+    expect(parsed.project.days[0].ranges[0].end).toBe(3)
+    expect(parsed.project.days[1].rest).toBe(true)
+    expect(parsed.project.places.some((p:{name:string,visible:boolean})=>p.name==='Pai' && p.visible)).toBe(true)
+
+    // Offline / network failure degrades cleanly and manual splitting still works
+    dialog().querySelector<HTMLButtonElement>('[data-step="2"]')!.click()
+    ;(app.dom.window as unknown as { fetch: typeof fetch }).fetch=(async()=>{
+      throw new TypeError('Failed to fetch')
+    }) as unknown as typeof fetch
+    const aiAfter=dialog().querySelector<HTMLDetailsElement>('details.wiz-ai')!
+    aiAfter.open=true
+    aiAfter.dispatchEvent(new app.dom.window.Event('toggle'))
+    dialog().querySelector<HTMLButtonElement>('#wiz-ai-generate')!.click()
+    await until(()=>Boolean(dialog().querySelector('#wiz-ai-error')),'Offline AI error did not appear')
+    expect(dialog().querySelector('#wiz-ai-error')?.textContent).toMatch(/connection|offline|reach/i)
+
+    // Manual Split here still works seamlessly after offline AI error
+    app.button('Split here')
+    expect(dialog().querySelectorAll('.wiz-day-pill')).toHaveLength(4)
   } finally {
     await Bun.sleep(0)
     app.dom.window.close()
